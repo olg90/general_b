@@ -1,0 +1,259 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def get_time_to(text, f, ku, Mu, nu, kd, Md, nd):
+    
+    if text == 'f':
+        return np.random.exponential(1./f)
+    
+    if text == 'nu':
+        if Mu > nu:
+            return np.random.exponential(1./(ku*(Mu-nu)))
+        else:
+            return np.inf
+        
+    if text == 'nd':
+        if Md > nd:
+            return np.random.exponential(1./(kd*(Md-nd)))
+        else:
+            return np.inf
+
+def get_arg_type(i):
+    
+    if i == 0:
+        return 'f'
+    if i == 1:
+        return 'nu'
+    if i == 2:
+        return 'nd'
+    if i == 2:
+        return 'measure'
+    
+def to_dict(**x):
+    return x
+
+def run_test(args):
+
+    run_time = args['run_time']
+    f = args['f']
+
+    ku = args['ku']
+    Mu = args['Mu']
+    pu = args['pu']
+    cu = args['cu']
+
+    kd = args['kd']
+    Md = args['Md']
+    pd = args['pd']
+    cd = args['cd']
+    
+    tauv = args['tauv']
+    vth = args['vth']
+
+    delta_t = args['delta_t']
+    
+    current_time = 0
+    v_membrane = 0
+    
+    nu = 0
+    nd = 0
+    
+    v_history = [[0, current_time]] # data array
+    AP_times = []
+
+    preneuron_firing_history = []
+    
+    t_measure = delta_t
+    
+    while current_time < run_time:
+        
+        time_to_f = get_time_to('f', f, ku, Mu, nu, kd, Md, nd) # next reaction time
+        time_to_nu = get_time_to('nu', f, ku, Mu, nu, kd, Md, nd)
+        time_to_nd = get_time_to('nd', f, ku, Mu, nu, kd, Md, nd)
+            
+        times_array = np.array([time_to_f, time_to_nu, time_to_nd, t_measure])
+    
+        t_min_arg = np.argmin(times_array)
+        arg_type = get_arg_type(t_min_arg)
+        t_min = times_array[t_min_arg]
+    
+        if arg_type == 'f':
+            preneuron_firing_history.append(current_time)
+
+            b_u = np.random.binomial(nu, pu) # Number released
+            nu -= b_u
+
+            voltage_addition = cu*b_u
+            v_membrane += voltage_addition
+            
+            v_history.append([v_membrane, current_time])
+            
+            if v_membrane >= vth:
+                
+                b_d = np.random.binomial(nd, pd)
+                v_membrane = -cd*b_d
+                nd -= b_d
+                AP_times.append(current_time)
+
+            current_time += t_min
+            t_measure -= t_min
+
+        elif arg_type == 'nu':
+            
+            if nu < Mu:
+                nu += 1            
+            
+            current_time += t_min
+            t_measure -= t_min
+            
+        elif arg_type == 'nd':
+            
+            if nd < Md:
+                nd += 1
+    
+            current_time += t_min
+            t_measure = t_min
+            
+        else:
+            v_membrane = v_membrane*np.exp(-t_min/tauv)
+            
+            v_history.append([v_membrane, current_time])
+    
+            current_time += t_min
+            t_measure = delta_t
+            
+    v_history = np.array(v_history) # data array
+    AP_times = np.array(AP_times)
+    
+    inter_AP_times = np.diff(AP_times)
+    if len(inter_AP_times) < 2:
+        mean_inter_AP_time = np.nan
+        CVT2 = np.nan
+    else:
+        mean_inter_AP_time = np.mean(inter_AP_times)
+        CVT2 = np.var(inter_AP_times) / mean_inter_AP_time**2
+    
+    return {'v_history': np.array(v_history),
+            'AP_times':np.array(AP_times),
+            'inter_AP_times':np.array(inter_AP_times),
+            'mean_T':mean_inter_AP_time, 
+            'CVT2':CVT2}
+
+def get_equations(f, params):
+    
+    Mu = params['Mu']
+    Md = params['Md']
+    pu = params['pu']
+    pd = params['pd']
+    cu = params['cu']
+    cd = params['cd']
+    ku = params['ku']
+    kd = params['kd']
+    tauv = params['tauv']
+    vth = params['vth']
+    
+    # T_mean calculation
+    X = f*tauv*(-k2*M2*p2*(1-pe)/(k2+f*p2)+k1*M1*p1*pe/(k1+f*p1))
+    T_mean = tauv*np.log(1/(1-X))
+    
+    # CVT2 calculation
+    CV2T = -((
+    return T_mean, CVT2
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+# Test 1
+
+# Values of c to test
+f_max = 100
+f_vals = np.arange(1,f_max+1)
+
+
+run_time = 60
+Mu = 10 
+Md = 1
+
+pu = 0.2
+pd = 0
+
+cu = 0.02
+cd = 0
+
+ku = 10
+kd = 1
+
+tauv = 1
+
+vth = 0.2
+delta_t = 0.01
+
+#
+checkvth = cu * ku * Mu * tauv - vth
+checkf = (vth * ku) / (pu * (cu * ku * Mu * tauv - vth))
+ninit = int(np.ceil(checkf))
+#
+
+# Simulations
+mean_T_sim = []
+CVT2_sim = []
+
+iter_range = range(ninit, len(f_vals))
+for j, i in enumerate(iter_range):
+    f = f_vals[i]
+    params = to_dict(run_time = run_time, f = f, Mu = Mu, Md = Md, 
+        pu = pu, pd = pd, cu = cu, cd = cd, ku = ku,kd = kd, 
+        tauv = tauv, vth = vth, delta_t = delta_t)  
+    print(j/len(iter_range))
+
+    result = run_test(params)
+
+    mean_T_sim.append(result['mean_T'])
+    CVT2_sim.append(result['CVT2'])
+    
+# Equations
+
+mean_T_eq = []
+CVT2_eq = []
+
+for i in iter_range:
+    T_mean_eq_val, CVT2T_eq_val = get_equations(f_vals[i], params)
+    mean_T_eq.append(T_mean_eq_val)
+    CVT2_eq.append(CVT2T_eq_val)
+    
+f_actual = [f for f in iter_range]
+
+fig, ax = plt.subplots(1,2)
+ax[0].plot(f_actual, mean_T_sim, label = '<T> Simulations')
+ax[0].plot(f_actual, mean_T_eq, label = '<T> Equation')
+ax[1].plot(f_actual, CVT2_sim, label = 'CVT2 Simulations')
+ax[1].plot(f_actual, CVT2_eq, label = 'CVT2 Equation')
+ax[0].legend()
+ax[1].legend()
+plt.show()
+
+################################
+def get_T_mean(vth, c, f, k2, M2, p2, pe, k1, M1, p1, tauv):
+    numerator = k2 * M2 * p2 * (1 - pe)
+    denominator = k2 + f * p2
+    term1 = -((numerator / denominator) + (k1 * M1 * p1 * pe) / (k1 + f * p1))
+    result = tauv * np.log(1 / (1 - vth / (c * f * term1 * tauv)))
+    return result
+
+# Example usage:
+vth = 2.0
+c = 1.5
+f = 3.0
+k2 = 0.8
+M2 = 1.2
+p2 = 0.5
+pe = 0.1
+k1 = 0.7
+M1 = 1.0
+p1 = 0.4
+tauv = 0.6
+
+result = my_expression(vth, c, f, k2, M2, p2, pe, k1, M1, p1, tauv)
+print(result)
