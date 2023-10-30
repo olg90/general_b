@@ -152,6 +152,14 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
+
+def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe):
+
+    # T_mean calculation
+    denominator = f*tauv*(-c2*k2*M2*p2*(1-pe)/(k2+f*p2)+c1*k1*M1*p1*pe/(k1+f*p1))
+    T_mean = tauv*np.log(1/(1-1/denominator))
+    return T_mean
+
 def get_equations(f, params):
     
     M1 = params['M1']
@@ -169,14 +177,10 @@ def get_equations(f, params):
     tauv = params['tauv']
     vth = params['tauv']
     
-    # T_mean calculation
-    denominator = f*tauv*(-c2*k2*M2*p2*(1-pe)/(k2+f*p2)+c1*k1*M1*p1*pe/(k1+f*p1))
-    T_mean = tauv*np.log(1/(1-denominator))
+    T_mean = get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe)
     
 
     # CV2T
-    
-    
     numerator = -(
     (vth**2 + 
     (vth * (k1 * (f * p1 * (
@@ -205,8 +209,6 @@ def get_equations(f, params):
 )**2 * tauv)))
     
     
-
-    #
     denominator = tauv**2 * ((
         (c2 * f * k2 * M2 * p2 * (-1 + pe)) / (k2 + f * p2) + 
         (c1 * f * k1 * M1 * p1 * pe) / (k1 + f * p1) - 
@@ -229,30 +231,26 @@ f_max = 100
 f_vals = np.arange(1,f_max+1)
 
 
-run_time = 60
+run_time = 30
 
-p1 = 0.5
+p1 = 0.6
 p2 = 0.3
 
-M1 = 10
-M2 = 10
+M1 = 100
+M2 = 100
 
 c1 = 0.02
 c2 = 0.02
 
-k1 = 1000
-k2 = 1
+k1 = 20
+k2 = 10
 
-pe = 0.9
+pe = 0.7
 
 tauv = 1
 
 vth = 0.2
 delta_t = 0.01
-
-#
-
-#
 
 # Simulations
 mean_T_sim = []
@@ -261,7 +259,7 @@ CVT2_sim = []
 fmax = 100
 f_vals = np.arange(1, fmax+1)
 
-ninit = 20
+ninit = 1
 
 iter_range = range(ninit, len(f_vals))
 for j, i in enumerate(iter_range):
@@ -275,9 +273,8 @@ for j, i in enumerate(iter_range):
 
     mean_T_sim.append(result['mean_T'])
     CVT2_sim.append(result['CVT2'])
-    
-# Equations
 
+# Equations
 mean_T_eq = []
 CVT2_eq = []
 
@@ -285,7 +282,7 @@ for i in iter_range:
     T_mean_eq_val, CVT2T_eq_val = get_equations(f_vals[i], params)
     mean_T_eq.append(T_mean_eq_val)
     CVT2_eq.append(CVT2T_eq_val)
-    
+
 f_actual = [f for f in iter_range]
 
 fig, ax = plt.subplots(1,2)
@@ -296,4 +293,3 @@ ax[1].plot(f_actual, CVT2_eq, label = 'CVT2 Equation')
 ax[0].legend()
 ax[1].legend()
 plt.show()
-
