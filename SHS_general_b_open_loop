@@ -142,24 +142,14 @@ def run_test(args):
 def get_equations(f, params):
     
     Mu = params['Mu']
-    Md = params['Md']
     pu = params['pu']
-    pd = params['pd']
     cu = params['cu']
-    cd = params['cd']
     ku = params['ku']
-    kd = params['kd']
+    
     tauv = params['tauv']
     vth = params['vth']
     
     T_mean = tauv * np.log(1 / (1 - (vth * (ku + f * pu)) / (cu * f * ku * Mu * tauv * pu)))
-
-# =============================================================================
-#     A = -(ku*vth + f*(-2*cu*ku*Mu*tauv + vth)*pu)*(ku+pu*(f + ku*(-1 + Mu) - f*pu))
-#     B = np.log((cu*f*ku*Mu*tauv*pu)/(-ku*vth+f*(cu*ku*Mu*tauv - vth)*pu))**2
-#     C = 2*f*ku*Mu*tauv*vth*pu*(ku+f*pu)
-#     CVT2T = A/(B*C)
-# =============================================================================
 
     A = -vth*(ku+f*pu)*(ku*vth+f*(-2*cu*ku*Mu*tauv + vth)*pu)
     B = (ku+pu*(f+ku*(-1+Mu)-f*pu))
@@ -183,24 +173,22 @@ def get_equations(f, params):
 f_max = 100
 f_vals = np.arange(1,f_max+1)
 
+run_time = 30
 
-run_time = 60
-Mu = 10 
-Md = 1
-
+Mu = 50
 pu = 0.2
-pd = 0
-
-cu = 0.02
-cd = 0
-
+cu = 0.008
 ku = 10
-kd = 1
 
 tauv = 1
 
 vth = 0.2
 delta_t = 0.01
+
+Md = 1
+pd = 0
+cd = 0
+kd = 1
 
 #
 checkvth = cu * ku * Mu * tauv - vth
