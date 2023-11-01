@@ -139,6 +139,29 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
+def get_T_mean(f, tauv, c, k, M, p, vth):
+    
+    bMeanSS = p*k*M / (f*p + k)
+    bMeanSS = c*bMeanSS
+    denominator = f*tauv*bMeanSS
+    T_mean = tauv*np.log(1/(1-vth/denominator))
+    
+    return T_mean
+
+def get_CVT2(f, tauv, c, k, M, p, vth):
+    
+    bMeanSS = p*k*M / (f*p + k)
+    bMeanSS = c*bMeanSS
+    denominator = f*tauv*bMeanSS
+    
+    bVarianceSS = p*(1-p)*k*M/(f*p*k)
+    bSquaredMeanSS = bVarianceSS + bMeanSS**2
+    numerator = vth*(vth-2*f*tauv*bMeanSS)*bSquaredMeanSS
+    denominator = 2*f*tauv*bMeanSS**2*(vth - f*tauv*bMeanSS)**2*np.log(1-vth/(f*tauv*bMeanSS - vth))**2
+    return numerator/denominator
+
+
+
 def get_equations(f, params):
     
     Mu = params['Mu']
