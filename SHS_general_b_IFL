@@ -165,12 +165,15 @@ def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth):
     b1MeanSS = p1*k1*M1 / (f*p1 + k1)
     b2MeanSS = p2*k2*M2 / (f*p2 + k2)
     bMeanSS = c1*b1MeanSS - c2*b2MeanSS*pe
+    
+    b2SquaredMeanSS = (1-p2)*b2MeanSS + b2MeanSS**2
 
-    bVarianceSS = c1**2*(1-p1)*b1MeanSS + c2**2*pe*(1-p2)*b2MeanSS
+    bVarianceSS = c1**2*(1-p1)*b1MeanSS + c2**2*(b2SquaredMeanSS*pe - b2MeanSS**2*pe**2)
     bSquaredMeanSS = bVarianceSS + bMeanSS**2
     
     numerator = vth*(vth - 2*f*tauv*bMeanSS)*bSquaredMeanSS
-    denominator = 2*f*tauv*bMeanSS**2*(vth-f*tauv*bMeanSS)**2*np.log(1 + vth/f*tauv*bMeanSS-vth)**2
+    denominator1 = np.log(1 + vth/f*tauv*bMeanSS-vth)**2
+    denominator = 2*f*tauv*bMeanSS**2*(vth-f*tauv*bMeanSS)**2*denominator1
     
     return numerator/denominator
 
