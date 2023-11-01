@@ -152,13 +152,34 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
-
-def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe):
-
-    # T_mean calculation
-    denominator = f*tauv*(-c2*k2*M2*p2*(1-pe)/(k2+f*p2)+c1*k1*M1*p1*pe/(k1+f*p1))
-    T_mean = tauv*np.log(1/(1-1/denominator))
+def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth):
+    
+    A=-c2*k2*M2*p2*(1-pe)/(k2+f*p2)
+    B=c1*k1*M1*p1*pe/(k1+f*p1)
+    denominator = f*(A+B)*tauv
+    T_mean = tauv*np.log(1/(1-vth/denominator))
+    
     return T_mean
+
+def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth):
+    
+    b1MeanSS = p1*k1*M1 / (f*p1 + k1)
+    b2MeanSS = p2*k2*M2 / (f*p2 + k2)
+    bMeanSS = c1*b1MeanSS*pe - c2*b2MeanSS*(1-pe)
+    
+    b1SquaredMeanSS = (1-p1)*b1MeanSS + b1MeanSS**2
+    b2SquaredMeanSS = (1-p2)*b2MeanSS + b2MeanSS**2
+
+    bVarianceSS = c1**2*(b1SquaredMeanSS*pe-b1MeanSS**2*pe**2)+\
+                         c2**2*(1-pe)**2*(b2SquaredMeanSS-b2MeanSS**2)
+    bSquaredMeanSS = bVarianceSS + bMeanSS**2
+
+    numerator = -vth*(vth - 2*f*tauv*bMeanSS)*bSquaredMeanSS
+    denominator = 2*f*tauv*bMeanSS**2*(vth-f*tauv*bMeanSS)**2*np.log(1 - vth/(f*tauv*bMeanSS-vth))**2
+    
+    return numerator/denominator
+
+
 
 def get_equations(f, params):
     
@@ -177,46 +198,10 @@ def get_equations(f, params):
     tauv = params['tauv']
     vth = params['tauv']
     
-    T_mean = get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe)
-    
+    T_mean = get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
+    CVT2 = get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
 
-    # CV2T
-    numerator = -(
-    (vth**2 + 
-    (vth * (k1 * (f * p1 * (
-        -f**2 * M1 * (-1 + p1) * p1 * p2**2 * pe + 
-        2 * f * k2 * p2 * (-M1 * (-1 + p1) * p1 * pe + 
-           M2 * p2 * (-1 + pe) * (-1 + p2 + c1 * c2 * M1 * p1 * pe)) + 
-        k2**2 * (-M1 * (-1 + p1) * p1 * pe + 
-           2 * M2 * p2 * (-1 + pe) * (-1 + p2 + c2**2 * M2 * p2 * (-1 + pe) + c1 * c2 * M1 * p1 * pe))) + 
-     k1 * (f**2 * M1 * p1 * p2**2 * pe * (1 + p1 * (-1 + c1**2 * M1 * pe)) + 
-        k2**2 * (c2**2 * M2**2 * p2**2 * (-1 + pe)**2 + 
-           M1 * p1 * pe * (1 - p1 + c1**2 * M1 * p1 * pe) + 
-           M2 * p2 * (-1 + pe) * (-1 + p2 + 2 * c1 * c2 * M1 * p1 * pe)) + 
-        f * k2 * p2 * (2 * M1 * p1 * pe * (1 - p1 + c1**2 * M1 * p1 * pe) + 
-           M2 * p2 * (-1 + pe) * (-1 + p2 + 
-              2 * c1 * c2 * M1 * p1 * pe)))) * 
-  (-2 * c2 * f * k2 * M2 * (k1 + f * p1) * p2 * (-1 + pe) * tauv + 
-   (k2 + f * p2) * (-2 * c1 * f * k1 * M1 * p1 * pe * tauv + (k1 + f * p1) * vth)) - 
- f * (2 * (k1 + f * p1) * (k2 + f * p2) * (c2 * k2 * M2 * (k1 + f * p1) * p2 * (-1 + pe) + 
-      c1 * k1 * M1 * p1 * (k2 + f * p2) * pe)**2 * tauv * vth + 
- f * k2 * M2 * p1**2 * p2 * (f * (-1 + p2) * p2 + 
-    k2 * (-1 + p2 + c2**2 * M2 * p2 * (-1 + pe))) * (1 - pe) * 
-  (-2 * c2 * f * k2 * M2 * (k1 + f * p1) * p2 * (-1 + pe) * tauv + 
-   (k2 + f * p2) * (-2 * c1 * f * k1 * M1 * p1 * pe * tauv + (k1 + f * p1) * vth))))
-) / (2 * f * (k1 + f * p1) * (k2 + f * p2) * (
-    c2 * k2 * M2 * (k1 + f * p1) * p2 * (-1 + pe) + c1 * k1 * M1 * p1 * (k2 + f * p2) * pe
-)**2 * tauv)))
-    
-    
-    denominator = tauv**2 * ((
-        (c2 * f * k2 * M2 * p2 * (-1 + pe)) / (k2 + f * p2) + 
-        (c1 * f * k1 * M1 * p1 * pe) / (k1 + f * p1) - 
-        vth / tauv
-    )**2 * np.log(1 / (1 - vth / (f * ((c2 * k2 * M2 * p2 * (-1 + pe)) / (k2 + f * p2) + 
-                                       (c1 * k1 * M1 * p1 * pe) / (k1 + f * p1)) * tauv)))**2
-)
-    CVT2 = numerator / denominator
+
     return T_mean, CVT2
 
 ###############################################################################
@@ -245,7 +230,7 @@ c2 = 0.02
 k1 = 20
 k2 = 10
 
-pe = 0.7
+pe = 0.8
 
 tauv = 1
 
@@ -278,7 +263,10 @@ for j, i in enumerate(iter_range):
 mean_T_eq = []
 CVT2_eq = []
 
-for i in iter_range:
+print('Equations')
+
+for j, i in enumerate(iter_range):
+    print(j/len(iter_range))
     T_mean_eq_val, CVT2T_eq_val = get_equations(f_vals[i], params)
     mean_T_eq.append(T_mean_eq_val)
     CVT2_eq.append(CVT2T_eq_val)
