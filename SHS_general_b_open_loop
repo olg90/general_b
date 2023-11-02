@@ -139,47 +139,50 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
-def get_T_mean(f, tauv, c, k, M, p, vth):
+def get_T_mean(f, tauv, c, k, M, pr, vth):
     
-    bMeanSS = p*k*M / (f*p + k)
-    bMeanSS = c*bMeanSS
-    denominator = f*tauv*bMeanSS
+    nMeanSS = k*M/(f*pr+k)
+    nSquaredMeanSS = k*M*(2*k*M-f*pr**2 + 2*f*pr)/((f*pr+k)*(2*k-f*pr**2+2*f*pr))
+    bMeanSS = pr*nMeanSS
+    
+    # Model bMeanSS
+    bGenMean = c*bMeanSS
+    denominator = f*tauv*bGenMean
     T_mean = tauv*np.log(1/(1-vth/denominator))
     
     return T_mean
 
-def get_CVT2(f, tauv, c, k, M, p, vth):
+def get_CVT2(f, tauv, c, k, M, pr, vth):
     
-    bMeanSS = p*k*M / (f*p + k)
-    bMeanSS = c*bMeanSS
-    denominator = f*tauv*bMeanSS
+    nMeanSS = k*M/(f*pr+k)
+    nSquaredMeanSS = k*M*(2*k*M-f*pr**2 + 2*f*pr)/((f*pr+k)*(2*k-f*pr**2+2*f*pr))
+    bMeanSS = pr*nMeanSS
+    bSquaredMeanSS = pr*(1-pr)*nMeanSS + pr**2*nSquaredMeanSS
     
-    bVarianceSS = p*(1-p)*k*M/(f*p*k)
-    bSquaredMeanSS = bVarianceSS + bMeanSS**2
-    numerator = vth*(vth-2*f*tauv*bMeanSS)*bSquaredMeanSS
-    denominator = 2*f*tauv*bMeanSS**2*(vth - f*tauv*bMeanSS)**2*np.log(1-vth/(f*tauv*bMeanSS - vth))**2
+    # Model bMeanSS
+    bGenMean = c*bMeanSS
+
+    numerator = -vth*(vth-2*f*tauv*bGenMean)*bSquaredMeanSS
+    denominator = 2*f*tauv*bGenMean**2*(vth - f*tauv*bGenMean)**2*np.log(1+vth/(f*tauv*bGenMean - vth))**2
     return numerator/denominator
-
-
 
 def get_equations(f, params):
     
-    Mu = params['Mu']
-    pu = params['pu']
-    cu = params['cu']
-    ku = params['ku']
-    
+    M = params['Mu']
+    pr = params['pu']
+    c = params['cu']
+    k = params['ku']
+
     tauv = params['tauv']
     vth = params['vth']
     
-    T_mean = tauv * np.log(1 / (1 - (vth * (ku + f * pu)) / (cu * f * ku * Mu * tauv * pu)))
-
-    A = -vth*(ku+f*pu)*(ku*vth+f*(-2*cu*ku*Mu*tauv + vth)*pu)
-    B = (ku+pu*(f+ku*(-1+Mu)-f*pu))
-    C1 = cu*f*ku*Mu*tauv*pu
-    C2 = -ku*vth+f*(cu*ku*Mu*tauv-vth)*pu
-    C = 2*f*ku*Mu*tauv*np.log((C1)/(C2))**2*pu
-    D = (ku*vth+f*(-cu*ku*Mu*tauv+vth)*pu)**2
+    X = (k+f*pr)*vth/(c*f*k*M*pr*tauv)
+    T_mean = tauv*np.log(1/(1-X))
+    
+    A = -(k+f*pr)*(-1+k*(-1+pr) + f*(-1+pr)*pr)
+    B = vth*(2*c*f*k*M*pr*tauv - (k+f*pr)*vth)
+    C = 2*f*k*M*pr*tauv*(c*f*k*M*pr*tauv - (k + f*pr)*vth)**2
+    D = np.log(c*f*k*M*pr*tauv/(c*f*k*M*pr*tauv-(k+f*pr)*vth))
     
     CVT2 = A*B/(C*D)
     
@@ -198,10 +201,10 @@ f_vals = np.arange(1,f_max+1)
 
 run_time = 30
 
-Mu = 50
-pu = 0.2
-cu = 0.008
-ku = 10
+Mu = 10
+pu = 0.3
+cu = 0.02
+ku = 20
 
 tauv = 1
 
