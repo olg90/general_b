@@ -201,14 +201,14 @@ f_vals = np.arange(1,f_max+1)
 
 run_time = 30
 
-Mu = 10
-pu = 0.3
-cu = 0.02
-ku = 20
+Mu = 20
+pu = 0.1
+cu = 0.005
+ku = 2
 
 tauv = 1
 
-vth = 0.2
+vth = 0.07
 delta_t = 0.01
 
 Md = 1
