@@ -152,30 +152,51 @@ def run_test(args):
 
 def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth):
     
-    b1MeanSS = p1*k1*M1 / (f*p1 + k1)
-    b2MeanSS = p2*k2*M2 / (f*p2 + k2)
-    bMeanSS = c1*b1MeanSS - c2*b2MeanSS*pe
-    denominator = f*tauv*bMeanSS
-    T_mean = tauv*np.log(1/(1-vth/denominator))
+    T_mean = tauv*np.log(1/(1 - vth/(f*((c1*k1*M1*p1)/(k1 + f*p1) - (c2*M2*pe)/f)*tauv)))
     
     return T_mean
 
-def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth):
+def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pi, vth):
     
-    b1MeanSS = p1*k1*M1 / (f*p1 + k1)
-    b2MeanSS = p2*k2*M2 / (f*p2 + k2)
-    bMeanSS = c1*b1MeanSS - c2*b2MeanSS*pe
-    
-    b2SquaredMeanSS = (1-p2)*b2MeanSS + b2MeanSS**2
+# =============================================================================
+#     b1MeanSS = p1*k1*M1 / (f*p1 + k1)
+#     b2MeanSS = p2*k2*M2 / (f*p2 + k2)
+#     bMeanSS = c1*b1MeanSS - c2*b2MeanSS*pe
+#     
+#     b2SquaredMeanSS = (1-p2)*b2MeanSS + b2MeanSS**2
+# 
+#     bVarianceSS = c1**2*(1-p1)*b1MeanSS + c2**2*(b2SquaredMeanSS*pe - b2MeanSS**2*pe**2)
+#     bSquaredMeanSS = bVarianceSS + bMeanSS**2
+#     
+#     numerator = vth*(vth - 2*f*tauv*bMeanSS)*bSquaredMeanSS
+#     denominator1 = np.log(1 + vth/f*tauv*bMeanSS-vth)**2
+#     denominator = 2*f*tauv*bMeanSS**2*(vth-f*tauv*bMeanSS)**2*denominator1
+# =============================================================================
 
-    bVarianceSS = c1**2*(1-p1)*b1MeanSS + c2**2*(b2SquaredMeanSS*pe - b2MeanSS**2*pe**2)
-    bSquaredMeanSS = bVarianceSS + bMeanSS**2
-    
-    numerator = vth*(vth - 2*f*tauv*bMeanSS)*bSquaredMeanSS
-    denominator1 = np.log(1 + vth/f*tauv*bMeanSS-vth)**2
-    denominator = 2*f*tauv*bMeanSS**2*(vth-f*tauv*bMeanSS)**2*denominator1
-    
-    return numerator/denominator
+    numerator = ((k1 + f*p1)**2*(-vth**2 - (vth*(c2**2*M2*(k1 + \
+                f*p1)**2*pi*(f**2*k2*(-1 + p2)*p2 - \
+                M2*(k2 + f*p2)*pi)*(2*c1*f*k1*M1*p1*tauv - (k1 + \
+                   f*p1)*(2*c2*M2*pi*tauv + vth)) - \
+             f*(k2 + f*p2)*(2*c1**3*f**2*k1**2*M1**2*p1**2*(k1 + \
+                   k1*(-1 + M1)*p1 - f*(-1 + p1)*p1)*tauv + \
+                2*c2**2*M2**2*(k1 + f*p1)**3*pi**2*tauv*vth + \
+                2*c1*c2*k1*M1*M2*p1*(k1 + f*p1)**2*pi*(2*c2*M2*pi*tauv + \
+                   vth - 2*f*tauv*vth) + \
+                c1**2*f*k1*M1*p1*(k1 + \
+                   f*p1)*(-2*c2*M2*(k1 + k1*(-1 + 3*M1)*p1 - \
+                      f*(-1 + p1)*p1)*pi*tauv + (f*(-1 + p1)*p1 + \
+                      k1*(-1 + p1 + \
+                        M1*p1*(-1 + 2*f*tauv)))*vth))))/(2*f*(k1 + \
+             f*p1)*(k2 + f*p2)*(c1*f*k1*M1*p1 - \
+             c2*M2*(k1 + f*p1)*pi)**2*tauv)))
+                                
+    denominator = ((c1*f*k1*M1*p1*tauv - (k1 + f*p1)*(c2*M2*pi*tauv + vth))**2*np.log(1/(\
+   1 - ((k1 + f*p1)*vth)/((c1*f*k1*M1*p1 - \
+       c2*M2*(k1 + f*p1)*pi)*tauv)))**2)
+
+    CVT2 = numerator/denominator
+
+    return CVT2
 
 def get_equations(f, params):
     
@@ -197,6 +218,8 @@ def get_equations(f, params):
     pe = params['pe']
     
     T_mean = get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
+    
+    
     CVT2 = get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
     
 
@@ -216,23 +239,24 @@ f_vals = np.arange(1,f_max+1)
 
 run_time = 30
 
-p1 = 0.6
-p2 = 0.3
+p1 = 0.3
+p2 = 0.1
 
-M1 = 100
-M2 = 100
+M1 = 50
+M2 = 50
 
-c1 = 0.02
-c2 = 0.01
+c1 = 0.03
+c2 = 0.03
 
-k1 = 20
-k2 = 10
+k1 = 10
+k2 = 5
 
-pe = 0.7
+# Inhibitatory feedback
+pe = 0.2
 
 tauv = 1
 
-vth = 0.2
+vth = 0.4
 delta_t = 0.01
 
 # Simulations
