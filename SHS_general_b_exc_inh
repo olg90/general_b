@@ -176,7 +176,7 @@ def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth):
 
     numerator = -vth*(vth - 2*f*tauv*bMeanSS)*bSquaredMeanSS
   
-    denominator1 = np.log(1 - vth/(vth-f*tauv*bMeanSS)) **2 
+    denominator1 = np.log(1 + vth/(-vth+f*tauv*bMeanSS))**2 
     denominator = 2*f*tauv*bMeanSS**2*(vth-f*tauv*bMeanSS)**2*denominator1
 
     return numerator/denominator
@@ -196,9 +196,11 @@ def get_equations(f, params):
     k2 = params['k2']
 
     tauv = params['tauv']
-    vth = params['tauv']
-
-    T_mean = get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
+    vth = params['vth']
+    
+    denominator = f*(-c2*k2*M2*p2*(1-pe)/(k2+f*p2)+c1*k1*M1*p1*pe/(k1+f*p1))*tauv
+    T_mean = tauv*np.log(1/(1-vth/denominator))
+    
     CVT2 = get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
 
     return T_mean, CVT2
@@ -217,23 +219,23 @@ f_vals = np.arange(1,f_max+1)
 
 run_time = 30
 
-p1 = 0.8
-p2 = 0.3
+p1 = 0.3
+p2 = 0.1
 
-M1 = 100
-M2 = 100
+M1 = 50
+M2 = 50
 
 c1 = 0.03
-c2 = 0.02
+c2 = 0.03
 
 k1 = 10
-k2 = 10
+k2 = 5
 
-pe = 0.8
+pe = 0.7
 
 tauv = 1
 
-vth = 0.2
+vth = 0.4
 delta_t = 0.01
 
 # Simulations
