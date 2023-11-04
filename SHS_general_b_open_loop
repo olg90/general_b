@@ -139,32 +139,7 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
-def get_T_mean(f, tauv, c, k, M, pr, vth):
-    
-    nMeanSS = k*M/(f*pr+k)
-    nSquaredMeanSS = k*M*(2*k*M-f*pr**2 + 2*f*pr)/((f*pr+k)*(2*k-f*pr**2+2*f*pr))
-    bMeanSS = pr*nMeanSS
-    
-    # Model bMeanSS
-    bGenMean = c*bMeanSS
-    denominator = f*tauv*bGenMean
-    T_mean = tauv*np.log(1/(1-vth/denominator))
-    
-    return T_mean
 
-def get_CVT2(f, tauv, c, k, M, pr, vth):
-    
-    nMeanSS = k*M/(f*pr+k)
-    nSquaredMeanSS = k*M*(2*k*M-f*pr**2 + 2*f*pr)/((f*pr+k)*(2*k-f*pr**2+2*f*pr))
-    bMeanSS = pr*nMeanSS
-    bSquaredMeanSS = pr*(1-pr)*nMeanSS + pr**2*nSquaredMeanSS
-    
-    # Model bMeanSS
-    bGenMean = c*bMeanSS
-
-    numerator = -vth*(vth-2*f*tauv*bGenMean)*bSquaredMeanSS
-    denominator = 2*f*tauv*bGenMean**2*(vth - f*tauv*bGenMean)**2*np.log(1+vth/(f*tauv*bGenMean - vth))**2
-    return numerator/denominator
 
 def get_equations(f, params):
     
@@ -176,8 +151,8 @@ def get_equations(f, params):
     tauv = params['tauv']
     vth = params['vth']
     
-    X = (k+f*pr)*vth/(c*f*k*M*pr*tauv)
-    T_mean = tauv*np.log(1/(1-X))
+    denominator = (k+f*pr)*vth/(c*f*k*M*pr*tauv)
+    T_mean = tauv*np.log(1/(1-denominator))
     
     A = -(k+f*pr)*(-1+k*(-1+pr) + f*(-1+pr)*pr)
     B = vth*(2*c*f*k*M*pr*tauv - (k+f*pr)*vth)
@@ -199,7 +174,7 @@ def get_equations(f, params):
 f_max = 100
 f_vals = np.arange(1,f_max+1)
 
-run_time = 30
+run_time = 60
 
 Mu = 20
 pu = 0.1
