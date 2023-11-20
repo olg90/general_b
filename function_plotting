@@ -1,1 +1,134 @@
 
+import tkinter as tk
+from tkinter import ttk
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# Define update_plot function first
+def update_plot(*args):
+    c = float(c_var.get())
+    pr = float(pr_var.get())
+    M = float(M_var.get())
+    vth = float(vth_var.get())
+    tauv = float(tauv_var.get())
+   
+    fmax = 100
+    fmin = 0.0001
+    f_values = np.linspace(fmin, fmax, 10000)
+
+    # Calculate the first function
+    func1_values = np.log(1 / (1 - ((1 + f_values) * (1 / (1 + f_values) + f_values * pr) * vth) / (c * f_values * M * pr * tauv)))
+
+    # Calculate the second function
+    func2_values = ((-2 + f_values * (-1 + pr) + pr) * (1 + f_values * pr) * (1 + f_values * (1 + f_values) * pr) * vth * (vth + f_values * pr * (-2 * c * M * tauv + vth + f_values * vth))) / (
+        2 * f_values * M * pr * tauv * (vth + f_values * pr * (-c * M * tauv + vth + f_values * vth))**2 * np.log((c * f_values * M * pr * tauv) / (c * f_values * M * pr * tauv - (1 + f_values * (1 + f_values) * pr) * vth))**2)
+
+    ax1.clear()
+    ax1.plot(f_values, 1/(func1_values + 0.0001), 'b', linewidth=2.0)
+    ax1.plot(np.arange(len(f_values)), np.zeros_like(f_values), 'k')
+    ax1.set_xlabel('Frequency (f)')
+    ax1.set_ylabel('<T>')
+    ax1.set_xlim([0, fmax])
+
+    ax2.clear()
+    ax2.plot(f_values, func2_values, 'r', linewidth=2.0)
+    ax2.plot(np.arange(len(f_values)), np.zeros_like(f_values), 'k')
+    ax2.set_xlabel('Frequency (f)')
+    ax2.set_ylabel('CVT2')
+    ax2.set_xlim([0, fmax])
+
+    canvas1.draw()
+    canvas2.draw()
+
+    # Update the displayed values next to the [xmax] boxes
+    c_xmax_label.config(text=f"Value: {c_var.get():.2f}")
+    pr_xmax_label.config(text=f"Value: {pr_var.get():.2f}")
+    M_xmax_label.config(text=f"Value: {M_var.get():.2f}")
+    vth_xmax_label.config(text=f"Value: {vth_var.get():.2f}")
+    tauv_xmax_label.config(text=f"Value: {tauv_var.get():.2f}")
+
+# Create main window
+root = tk.Tk()
+root.title("Function Plotter")
+
+# Create variables to store slider values
+c_var = tk.DoubleVar(value=1)
+pr_var = tk.DoubleVar(value=0.5)
+M_var = tk.DoubleVar(value=1)
+vth_var = tk.DoubleVar(value=1)
+tauv_var = tk.DoubleVar(value=1)
+
+# Create variables for slider bounds
+c_min_var = tk.DoubleVar(value=0.0001)
+c_max_var = tk.DoubleVar(value=0.2)
+pr_min_var = tk.DoubleVar(value=0)
+pr_max_var = tk.DoubleVar(value=1)
+M_min_var = tk.DoubleVar(value=1)
+M_max_var = tk.DoubleVar(value=1000)
+vth_min_var = tk.DoubleVar(value=0.07)
+vth_max_var = tk.DoubleVar(value=1)
+tauv_min_var = tk.DoubleVar(value=0.001)
+tauv_max_var = tk.DoubleVar(value=100)
+
+# Create sliders with input boxes for min and max values
+def create_slider_frame(label_text, slider_var, min_var, max_var):
+    frame = ttk.Frame(root, padding=(5, 5, 5, 5))
+    label = ttk.Label(frame, text=label_text)
+    label.grid(row=0, column=0, sticky=tk.E, padx=5)
+    xmin_entry = ttk.Entry(frame, textvariable=min_var, width=5)
+    xmin_entry.grid(row=0, column=1, padx=5)
+    slider = ttk.Scale(frame, from_=float(min_var.get()), to=float(max_var.get()), orient=tk.HORIZONTAL, length=200, variable=slider_var, command=update_plot)
+    slider.grid(row=0, column=2, padx=5)
+    xmax_entry = ttk.Entry(frame, textvariable=max_var, width=5)
+    xmax_entry.grid(row=0, column=3, padx=5)
+    xmax_label = ttk.Label(frame, text=f"Value: {max_var.get():.2f}")
+    xmax_label.grid(row=0, column=4, padx=5, sticky=tk.W)
+    return frame, slider, xmax_label
+
+c_frame, c_slider, c_xmax_label = create_slider_frame("c:", c_var, c_min_var, c_max_var)
+c_frame.grid(row=0, column=0, padx=10, pady=5, sticky=tk.W)
+
+pr_frame, pr_slider, pr_xmax_label = create_slider_frame("pr:", pr_var, pr_min_var, pr_max_var)
+pr_frame.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
+
+M_frame, M_slider, M_xmax_label = create_slider_frame("M:", M_var, M_min_var, M_max_var)
+M_frame.grid(row=2, column=0, padx=10, pady=5, sticky=tk.W)
+
+vth_frame, vth_slider, vth_xmax_label = create_slider_frame("vth:", vth_var, vth_min_var, vth_max_var)
+vth_frame.grid(row=3, column=0, padx=10, pady=5, sticky=tk.W)
+
+tauv_frame, tauv_slider, tauv_xmax_label = create_slider_frame("tauv:", tauv_var, tauv_min_var, tauv_max_var)
+tauv_frame.grid(row=4, column=0, padx=10, pady=5, sticky=tk.W)
+
+# Create Update Parameters button
+def update_parameters():
+    c_slider.configure(from_=float(c_min_var.get()), to=float(c_max_var.get()))
+    pr_slider.configure(from_=float(pr_min_var.get()), to=float(pr_max_var.get()))
+    M_slider.configure(from_=float(M_min_var.get()), to=float(M_max_var.get()))
+    vth_slider.configure(from_=float(vth_min_var.get()), to=float(vth_max_var.get()))
+    tauv_slider.configure(from_=float(tauv_min_var.get()), to=float(tauv_max_var.get()))
+
+update_params_button = ttk.Button(root, text="Update Parameters", command=update_parameters)
+update_params_button.grid(row=5, column=0, pady=10)
+
+# Create Matplotlib Figures and Canvas
+fig1, ax1 = plt.subplots(figsize=(6, 4))
+canvas1 = FigureCanvasTkAgg(fig1, master=root)
+canvas_widget1 = canvas1.get_tk_widget()
+canvas_widget1.grid(row=0, column=1, rowspan=3, padx=10, pady=10, sticky=tk.W+tk.E+tk.N+tk.S)
+
+fig2, ax2 = plt.subplots(figsize=(6, 4))
+canvas2 = FigureCanvasTkAgg(fig2, master=root)
+canvas_widget2 = canvas2.get_tk_widget()
+canvas_widget2.grid(row=3, column=1, rowspan=3, padx=10, pady=10, sticky=tk.W+tk.E+tk.N+tk.S)
+
+# Configure row and column to expand proportionally
+root.rowconfigure(0, weight=1)
+root.columnconfigure(1, weight=1)
+
+# Initialize the plot
+update_plot()
+
+# Run the GUI
+root.mainloop()
