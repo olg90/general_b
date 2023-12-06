@@ -155,12 +155,13 @@ def get_T_mean(f, tauv, k, M, pr, vth, cmax, cc, cH):
 
 
 def get_CVT2(cc, f, cH, k, pr, vth, cmax, M, tauv):
-    numerator = (1 + (cc * f)**cH) * (k + f * pr)**2 * (-f * pr + k * (-1 + f**2 * k * (-1 + pr) * pr**2)) * vth * (-2 * cmax * f * k * M * pr * tauv + (1 + (cc * f)**cH) * (k + f * pr) * vth)
-    denominator = 2 * f**3 * k**3 * M * pr**3 * tauv * (cmax * f * k * M * pr * tauv - (1 + (cc * f)**cH) * (k + f * pr) * vth)**2 * np.log((cmax * f * k * M * pr * tauv) / (cmax * f * k * M * pr * tauv - (1 + (cc * f)**cH) * (k + f * pr) * vth))**2
+    numerator = (1 + (cc * f)**cH) * (k + f * pr)**2 * (-f * pr + k * (-1 + f**2 * k * (-1 + pr) * pr**2)) * vth
+    denominator = 2 * f**3 * k**3 * M * pr**3 * tauv * (cmax * f * k * M * pr * tauv - (1 + (cc * f)**cH) * (k + f * pr) * vth)**2
 
-    result = numerator / denominator
+    log_term = np.log((cmax * f * k * M * pr * tauv) / (cmax * f * k * M * pr * tauv - (1 + (cc * f)**cH) * (k + f * pr) * vth))**2
+
+    result = numerator / denominator * log_term
     return result
-
 
 
 def get_equations(f, params):
@@ -175,7 +176,7 @@ def get_equations(f, params):
     cc = params['cc']
     cH = params['cH']
     
-    k = params['k']
+    k = params['ku']
 
     T_mean = get_T_mean(f, tauv, k, M, pr, vth, cmax, cc, cH)
     CVT2 = get_CVT2(cc, f, cH, k, pr, vth, cmax, M, tauv)
@@ -204,13 +205,9 @@ tauv = 10
 vth = 0.2
 delta_t = 0.01
 
-kmax = 100
-kc = 1
-kH = 1
-
-
-
-
+cmax = 0.01
+cc = 1
+cH = 1
 
 ###########################################
 Md = 1
@@ -253,7 +250,7 @@ for i in iter_range:
 f_actual = [f for f in iter_range]
 
 fig, ax = plt.subplots(1,2)
-fig.suptitle('k as a function of f')
+fig.suptitle('c as a function of f')
 ax[0].plot(f_actual, mean_T_sim, label = '<T> Simulations')
 ax[0].plot(f_actual, mean_T_eq, label = '<T> Equation')
 ax[1].plot(f_actual, CVT2_sim, label = 'CVT2 Simulations')
