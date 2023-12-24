@@ -260,7 +260,7 @@ f_max = 100
 f_vals = np.arange(1,f_max+1)
 
 
-run_time = 30
+run_time = 60
 
 p1 = 0.195
 p2 = 0.2
@@ -326,8 +326,8 @@ for i in iter_range:
 f_actual = [f for f in iter_range]
 
 fig, ax = plt.subplots(1,2)
-ax[0].plot(f_actual, mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_actual, mean_T_eq, label = '<T> Equation')
+ax[0].plot(f_actual, 1/np.array(mean_T_sim), label = '1/<T> Simulations')
+ax[0].plot(f_actual, 1/np.array(mean_T_eq), label = '1/<T> Equation')
 ax[1].plot(f_actual, CVT2_sim, label = 'CVT2 Simulations')
 ax[1].plot(f_actual, CVT2_eq, label = 'CVT2 Equation')
 ax[0].legend()
