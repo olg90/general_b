@@ -153,72 +153,95 @@ def get_pe(f, cp, Hp, pmin):
     return ((cp*f)**Hp+pmin)/(1+(cp*f)**Hp)
 
 
-def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, vth):
-    inner_expression = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
-    denominator = 1 - vth / (f * inner_expression * tauv)
-    result = tauv * np.log(1 / denominator)
-    return result
+# =============================================================================
+# def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, vth):
+#     inner_expression = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
+#     denominator = 1 - vth / (f * inner_expression * tauv)
+#     result = tauv * np.log(1 / denominator)
+#     return result
+# =============================================================================
 
 
-def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pi_f, vth):
-    expression = (
-        -vth**2 + 
-        (1 / (2 * (k1 + f * p1)**2 * (k2 + f * p2)**2)) * 
-        f * tauv * (
-            -1 + vth / (
-                f * tauv * (
-                    (c1 * k1 * M1 * p1) / (k1 + f * p1) - 
-                    (c2 * k2 * M2 * p2 * pi_f) / (k2 + f * p2)
-                )
-            )
-        )**2 * (
-            -1 + 1 / (
-                1 - vth / (
-                    f * tauv * (
-                        (c1 * k1 * M1 * p1) / (k1 + f * p1) - 
-                        (c2 * k2 * M2 * p2 * pi_f) / (k2 + f * p2)
-                    )
-                )
-            )
-        ) * (
-            -c1**2 * k1 * M1 * p1 * (k2 + f * p2)**2 * (
-                f * (-1 + p1) * p1 + 
-                k1 * (-1 + p1 + M1 * p1 * (-1 + 2 * f * tauv))
-            ) + (
-                -c1**3 * f * k1**2 * M1**2 * p1**2 * (k2 + f * p2)**3 * tauv * (
-                    k1 - f * (-1 + p1) * p1 + k1 * p1 * (-1 + M1 + 2 * f * M1 * tauv)
-                ) + 
-                c2 * k2 * M2 * (k1 + f * p1) * p2 * pi_f * (
-                    (k2 + f * p2)**2 * (
-                        c1**2 * f * k1 * M1 * p1 * tauv * (
-                            k1 - f * (-1 + p1) * p1 + k1 * p1 * (-1 + 5 * M1 + 2 * f * M1 * tauv)
-                        ) - 
-                        c2 * (k1 + f * p1)**2 * (-1 + p2) * vth + 
-                        2 * c1 * k1 * M1 * p1 * (
-                            k1 + f * p1
-                        ) * (
-                            c2 * f * (-1 + p2) * tauv + (-1 + 2 * f * tauv) * vth
-                        )
-                    ) - 
-                    c2 * k2 * M2 * (k1 + f * p1) * p2 * pi_f * (
-                        (k2 + f * p2) * (
-                            6 * c1 * f * k1 * M1 * p1 * tauv + 
-                            2 * c2 * f * (k1 + f * p1) * (-1 + p2) * tauv + 
-                            (k1 + f * p1) * (-1 + 2 * f * tauv) * vth
-                        ) - 
-                        2 * c2 * f * k2 * M2 * (k1 + f * p1) * p2 * tauv * pi_f
-                    )
-                )
-            ) / (
-                -((k2 + f * p2) * (
-                    c1 * f * k1 * M1 * p1 * tauv - 
-                    (k1 + f * p1) * vth
-                )) + 
-                c2 * f * k2 * M2 * (k1 + f * p1) * p2 * tauv * pi_f
-            )
-        )
-    )
-    return expression
+def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, tauv, vth):
+    bMeanSS = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (
+        c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
+    return tauv * np.log(1 / (1 - vth / (f * tauv * bMeanSS)))
+
+
+def get_CVT2(f, c1, c2, M1, M2, k1, k2, p1, p2, cp, Hp, pmin, tauv, vth):
+    
+    bMeanSS = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (
+        c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
+
+    bSquaredMeanSS = -((c1**2 * k1 * M1 * (-1 + p1) * p1) / (k1 + f * p1)) - \
+         ((c2**2 * k2 * M2 * (-1 + p2) * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2)) + \
+         ((c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2))**2
+
+    CVT2 = -((vth * (vth - 2 * f * tauv * bMeanSS) * bSquaredMeanSS) / (
+        2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2))
+    return CVT2
+
+# =============================================================================
+# def get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pi_f, vth):
+#     expression = (
+#         -vth**2 + 
+#         (1 / (2 * (k1 + f * p1)**2 * (k2 + f * p2)**2)) * 
+#         f * tauv * (
+#             -1 + vth / (
+#                 f * tauv * (
+#                     (c1 * k1 * M1 * p1) / (k1 + f * p1) - 
+#                     (c2 * k2 * M2 * p2 * pi_f) / (k2 + f * p2)
+#                 )
+#             )
+#         )**2 * (
+#             -1 + 1 / (
+#                 1 - vth / (
+#                     f * tauv * (
+#                         (c1 * k1 * M1 * p1) / (k1 + f * p1) - 
+#                         (c2 * k2 * M2 * p2 * pi_f) / (k2 + f * p2)
+#                     )
+#                 )
+#             )
+#         ) * (
+#             -c1**2 * k1 * M1 * p1 * (k2 + f * p2)**2 * (
+#                 f * (-1 + p1) * p1 + 
+#                 k1 * (-1 + p1 + M1 * p1 * (-1 + 2 * f * tauv))
+#             ) + (
+#                 -c1**3 * f * k1**2 * M1**2 * p1**2 * (k2 + f * p2)**3 * tauv * (
+#                     k1 - f * (-1 + p1) * p1 + k1 * p1 * (-1 + M1 + 2 * f * M1 * tauv)
+#                 ) + 
+#                 c2 * k2 * M2 * (k1 + f * p1) * p2 * pi_f * (
+#                     (k2 + f * p2)**2 * (
+#                         c1**2 * f * k1 * M1 * p1 * tauv * (
+#                             k1 - f * (-1 + p1) * p1 + k1 * p1 * (-1 + 5 * M1 + 2 * f * M1 * tauv)
+#                         ) - 
+#                         c2 * (k1 + f * p1)**2 * (-1 + p2) * vth + 
+#                         2 * c1 * k1 * M1 * p1 * (
+#                             k1 + f * p1
+#                         ) * (
+#                             c2 * f * (-1 + p2) * tauv + (-1 + 2 * f * tauv) * vth
+#                         )
+#                     ) - 
+#                     c2 * k2 * M2 * (k1 + f * p1) * p2 * pi_f * (
+#                         (k2 + f * p2) * (
+#                             6 * c1 * f * k1 * M1 * p1 * tauv + 
+#                             2 * c2 * f * (k1 + f * p1) * (-1 + p2) * tauv + 
+#                             (k1 + f * p1) * (-1 + 2 * f * tauv) * vth
+#                         ) - 
+#                         2 * c2 * f * k2 * M2 * (k1 + f * p1) * p2 * tauv * pi_f
+#                     )
+#                 )
+#             ) / (
+#                 -((k2 + f * p2) * (
+#                     c1 * f * k1 * M1 * p1 * tauv - 
+#                     (k1 + f * p1) * vth
+#                 )) + 
+#                 c2 * f * k2 * M2 * (k1 + f * p1) * p2 * tauv * pi_f
+#             )
+#         )
+#     )
+#     return expression
+# =============================================================================
 
 
 def get_equations(f, params):
@@ -238,11 +261,9 @@ def get_equations(f, params):
     tauv = params['tauv']
     vth = params['vth']
 
-    pe = params['pe']
+    T_mean = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, tauv, vth)
 
-    T_mean = get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, vth)
-
-    CVT2 = get_CVT2(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, pe, vth)
+    CVT2 = get_CVT2(f, c1, c2, M1, M2, k1, k2, p1, p2, cp, Hp, pmin, tauv, vth)
 
     return T_mean, CVT2
 
