@@ -1,4 +1,4 @@
-import numpy as np
+\import numpy as np
 import matplotlib.pyplot as plt
 
 def get_time_to(text, args, n1, n2):
@@ -268,64 +268,6 @@ def get_equations(params):
 # Values of c to test
 run_time = 15
 
-M1 = 100
-M2 = 100
-
-c1 = 0.01
-c2 = 0.01
-
-k1 = 100
-k2 = 100
-
-p1s = 0.3
-p1e = 0
-
-p2s = 0.3
-p2e = 0
-
-cp1 = 0.05
-cp2 = 0.05
-
-Hp1 = 5
-Hp2 = 5
-
-tauv = 1
-vth = 0.2
-
-delta_t = 0.01
-
-# Simulations
-
-fmax = 100
-f_vals = np.arange(1, fmax+1)
-
-mean_T_sim = np.zeros((fmax, fmax))
-CVT2_sim = np.zeros_like(mean_T_sim)
-
-
-for j1, i1 in enumerate(f_vals):
-    for j2, i2 in enumerate(f_vals):
-    
-        f1 = f_vals[i1]
-        f2 = f_vals[i2]
-        
-        params = to_dict(run_time = run_time, f1 = f1, f2 = f2, M1 = M1, M2 = M2,
-                         c1 = c1, c2 = c2, k1 = k1, p1s = p1s, p1e = p1e, p2s = p2s, p2e = p2e,
-                         cp1 = cp1, cp2 = cp2, Hp1 = Hp1, Hp2 = Hp2,
-                         k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)
-        print(j1/len(f_vals))
-    
-        result = run_test(params)
-    
-        mean_T_sim[j1,j2] = (result['mean_T'])
-        CVT2_sim[j1, j2] = (result['CVT2'])
-
-
-# Equations
-mean_T_eq = np.zeros_like(mean_T_sim)
-CVT2_eq = np.zeros_like(mean_T_sim)
-print('Equations')
-
 M1 = 50
 M2 = 200
 
@@ -350,8 +292,44 @@ Hp2 = 20
 tauv = 1
 vth = 0.2
 
+delta_t = 0.01
 
-F1, F2 = np.meshgrid(f_vals, f_vals)
+# Simulations
+
+fmax = 100
+f_vals = np.arange(1, fmax+1)
+
+mean_T_sim = np.zeros((fmax, fmax))
+CVT2_sim = np.zeros_like(mean_T_sim)
+
+iter_range = range(len(f_vals))
+for j1, i1 in enumerate(iter_range):
+    for j2, i2 in enumerate(iter_range):
+    
+        f1 = f_vals[i1]
+        f2 = f_vals[i2]
+        
+        params = to_dict(run_time = run_time, f1 = f1, f2 = f2, M1 = M1, M2 = M2,
+                         c1 = c1, c2 = c2, k1 = k1, p1s = p1s, p1e = p1e, p2s = p2s, p2e = p2e,
+                         cp1 = cp1, cp2 = cp2, Hp1 = Hp1, Hp2 = Hp2,
+                         k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)
+        print(j1/len(iter_range))
+    
+        result = run_test(params)
+    
+        mean_T_sim[j1,j2] = result['mean_T']
+        CVT2_sim[j1, j2] = result['CVT2']
+
+
+# Equations
+mean_T_eq = np.zeros_like(mean_T_sim)
+CVT2_eq = np.zeros_like(mean_T_sim)
+print('Equations')
+
+
+
+
+F1, F2 = np.meshgrid(iter_range, iter_range)
 mean_T_eq = get_T_mean(F1, F2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e)
 CVT2_eq = get_CVT2(F1, F2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
 
@@ -364,17 +342,19 @@ def convert_negatives_to_nan(array):
     
     return result_array
     
-ignore_negatives = False
+ignore_negatives = True
 if ignore_negatives == True:
     mean_T_eq = convert_negatives_to_nan(mean_T_eq)
     mean_T_sim = convert_negatives_to_nan(mean_T_sim)
     CVT2_eq = convert_negatives_to_nan(CVT2_eq)
     CVT2_sim = convert_negatives_to_nan(CVT2_sim)
+    
+#%%
 
 contour_levels = 20
 fig, ax = plt.subplots(2,2)
 im1 = ax[0,0].contourf(F1, F2, 1/mean_T_eq, cmap='viridis', levels=contour_levels)
-ax[0,0].contour(F1, F2, 1/mean_T_eq, colors='black', levels=contour_levels, linewidths=1)
+ax[0,0].contour(F1, F2, 1/mean_T_eq, colors='black', levels=contour_levels, linewidths=1, linestyles = 'solid')
 plt.colorbar(im1, label='1/<T_eq>')
 
 im2 = ax[0,1].contourf(F1, F2, 1/mean_T_sim, cmap='viridis', levels=contour_levels)
