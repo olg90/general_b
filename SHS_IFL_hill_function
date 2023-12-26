@@ -177,20 +177,29 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
-def get_T_mean(p1e, cp1, f1, Hp1, p1s, k1, p2e, cp2, f2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv):
-    
-    p1 = (p1e * (cp1 * f1)**Hp1 + p1s) / (1 + (cp1 * f1)**Hp1)
-    p2 = (p2e * (cp2 * f2)**Hp2 + p2s) / (1 + (cp2 * f2)**Hp2)
-    
-    b1MeanSS = p1 * k1 * M1 / (f1 * p1 + k1)
-    b2MeanSS = p2 * k2 * M2 / (f2 * p2 + k2)
-        
-    Tmean = tauv * np.log(1 / (1 - vth / (tauv * (c1 * f1 * b1MeanSS - c2 * f2 * b2MeanSS))))
+# =============================================================================
+# def get_T_mean(p1e, cp1, f1, Hp1, p1s, k1, p2e, cp2, f2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv):
+#     
+#     p1 = (p1e * (cp1 * f1)**Hp1 + p1s) / (1 + (cp1 * f1)**Hp1)
+#     p2 = (p2e * (cp2 * f2)**Hp2 + p2s) / (1 + (cp2 * f2)**Hp2)
+#     
+#     b1MeanSS = p1 * k1 * M1 / (f1 * p1 + k1)
+#     b2MeanSS = p2 * k2 * M2 / (f2 * p2 + k2)
+#         
+#     Tmean = tauv * np.log(1 / (1 - vth / (tauv * (c1 * f1 * b1MeanSS - c2 * f2 * b2MeanSS))))
+# 
+#     return Tmean
+# =============================================================================
 
-    return Tmean
+def get_T_mean(f1, f2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e):
+    p1 = (p1e * (cp1 * f1) ** Hp1 + p1s) / (1 + (cp1 * f1) ** Hp1)
+    p2 = (p2e * (cp2 * f2) ** Hp2 + p2s) / (1 + (cp2 * f2) ** Hp2)
+    numerator = k1 + f1 * p1
+    denominator = -c2 * f2 * k2 * M2 * (k1 + f1 * p1) * p2 + c1 * f1 * k1 * M1 * p1 * (k2 + f2 * p2)
+    return tauv * np.log(1 / (1 - (numerator * (k2 + f2 * p2) * vth) / (denominator * tauv)))
 
 
-def get_CVT2(p1e, cp1, f1, Hp1, p1s, k1, p2e, cp2, f2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv):
+def get_CVT2(f1, f2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv):
     
     p1 = (p1e * (cp1 * f1)**Hp1 + p1s) / (1 + (cp1 * f1)**Hp1)
     p2 = (p2e * (cp2 * f2)**Hp2 + p2s) / (1 + (cp2 * f2)**Hp2)
@@ -228,8 +237,8 @@ def get_equations(params):
     p1s = params['p1s']
     p2s = params['p2s']
 
-    p1e = params['hp1']
-    p2e = params['hp2']
+    p1e = params['Hp1']
+    p2e = params['Hp2']
 
     cp1 = params['cp1']
     cp2 = params['cp2']
@@ -243,7 +252,7 @@ def get_equations(params):
     tauv = params['tauv']
     vth = params['vth']
     
-    T_mean = get_T_mean(p1e, cp1, f1, Hp1, p1s, k1, p2e, cp2, f2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
+    T_mean = get_T_mean(f1, f2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e)
     
     CVT2 = get_CVT2(p1e, cp1, f1, Hp1, p1s, k1, p2e, cp2, f2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
 
@@ -257,9 +266,6 @@ def get_equations(params):
 # Test 1
 
 # Values of c to test
-f_max = 100
-f_vals = np.arange(1,f_max+1)
-
 run_time = 15
 
 M1 = 100
@@ -314,50 +320,76 @@ for j1, i1 in enumerate(iter_range):
         mean_T_sim[j1,j2] = (result['mean_T'])
         CVT2_sim[j1, j2] = (result['CVT2'])
 
+
 # Equations
 mean_T_eq = np.zeros_like(mean_T_sim)
 CVT2_eq = np.zeros_like(mean_T_sim)
-
 print('Equations')
 
-for j1, i1 in enumerate(iter_range):
-    for j2, i2 in enumerate(iter_range):
-        print(j1/len(iter_range))
-        params = to_dict(run_time = run_time, f1 = i1, f2 = i2, M1 = M1, M2 = M2,
-                         c1 = c1, c2 = c2, k1 = k1, k2 = k2, p1s = p1s, p1e = p1e, p2s = p2s, p2e = p2e,
-                         cp1 = cp1, cp2 = cp2, Hp1 = Hp1, Hp2 = Hp2,
-                         tauv = tauv, vth = vth, delta_t = delta_t)
-        T_mean_eq_val, CVT2T_eq_val = get_equations(params)
-        mean_T_eq[j1, j2] = T_mean_eq_val
-        CVT2_eq[j1, j2] = CVT2T_eq_val
+M1 = 50
+M2 = 200
 
-f_actual = [f for f in iter_range]
+c1 = 0.01
+c2 = 0.001
+
+k1 = 1000
+k2 = 1000
+
+p1s = 0.2
+p1e = 0
+
+p2s = 0.2
+p2e = 0
+
+cp1 = 0.0125
+cp2 = 0.0125
+
+Hp1 = 20
+Hp2 = 20
+
+tauv = 1
+vth = 0.2
 
 
+F1, F2 = np.meshgrid(iter_range, iter_range)
+mean_T_eq = get_T_mean(F1, F2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e)
+CVT2_eq = get_CVT2(F1, F2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
 
+def convert_negatives_to_nan(array):
+    # Create a copy of the original array to avoid modifying it in-place
+    result_array = array.copy()
+    
+    # Replace negative values with NaN
+    result_array[result_array < 0] = np.nan
+    
+    return result_array
+    
+ignore_negatives = False
+if ignore_negatives == True:
+    mean_T_eq = convert_negatives_to_nan(mean_T_eq)
+    mean_T_sim = convert_negatives_to_nan(mean_T_sim)
+    CVT2_eq = convert_negatives_to_nan(CVT2_eq)
+    CVT2_sim = convert_negatives_to_nan(CVT2_sim)
+
+contour_levels = 20
 fig, ax = plt.subplots(2,2)
-ax[0,0].imshow(1/mean_T_eq, cmap='viridis', origin='lower', 
-               extent=[f_actual[0], f_actual[-1], f_actual[0], f_actual[-1]])
-ax[1,0].imshow(CVT2_eq, cmap='viridis', origin='lower', 
-               extent=[f_actual[0], f_actual[-1], f_actual[0], f_actual[-1]])
-ax[0,1].imshow(1/mean_T_sim, cmap='viridis', origin='lower', 
-               extent=[f_actual[0], f_actual[-1], f_actual[0], f_actual[-1]])
-ax[1,1].imshow(CVT2_sim, cmap='viridis', origin='lower', 
-               extent=[f_actual[0], f_actual[-1], f_actual[0], f_actual[-1]])
+im1 = ax[0,0].contourf(F1, F2, 1/mean_T_eq, cmap='viridis', levels=contour_levels)
+ax[0,0].contour(F1, F2, 1/mean_T_eq, colors='black', levels=contour_levels, linewidths=1)
+plt.colorbar(im1, label='1/<T_eq>')
 
-ax[0,0].colorbar()
-ax[1,0].colorbar()
-ax[0,1].colorbar()
-ax[1,1].colorbar()
+im2 = ax[0,1].contourf(F1, F2, 1/mean_T_sim, cmap='viridis', levels=contour_levels)
+ax[0,1].contour(F1, F2, 1/mean_T_sim, colors='black', levels=contour_levels, linewidths=1)
+plt.colorbar(im2, label='1/<T_sim>')
 
-ax[0,0].title('1/mean_T_eq')
-ax[1,0].title('CVT2_eq')
-ax[0,1].title('1/mean_T_sim')
-ax[1,1].title('CVT2_sim')
+im3 = ax[1,0].contourf(F1, F2, CVT2_eq, cmap='viridis', levels=contour_levels)
+ax[1,0].contour(F1, F2, CVT2_eq, colors='black', levels=contour_levels, linewidths=1)
+plt.colorbar(im3, label='CVT2_eq')
 
-ax[0,0].legend()
-ax[1,0].legend()
-ax[0,1].legend()
-ax[1,1].legend()
+im4 = ax[1,1].contourf(F1, F2, CVT2_sim, cmap='viridis', levels=contour_levels)
+ax[1,1].contour(F1, F2, CVT2_sim, colors='black', levels=contour_levels, linewidths=1)
+plt.colorbar(im4, label='CVT2_sim')
+
+plt.tight_layout()
 
 plt.show()
+
