@@ -1,4 +1,4 @@
-\import numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 
 def get_time_to(text, args, n1, n2):
@@ -215,6 +215,7 @@ def get_CVT2(f1, f2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2,
     )) / (2 * tauv * (c1 * f1 * b1MeanSS - c2 * f2 * b2MeanSS)**2 * (
         vth - c1 * f1 * tauv * b1MeanSS + c2 * f2 * tauv * b2MeanSS
     )**2 * np.log(1 - vth / (vth - c1 * f1 * tauv * b1MeanSS + c2 * f2 * tauv * b2MeanSS))**2))
+        
 
     
     return CVT2
@@ -327,8 +328,6 @@ CVT2_eq = np.zeros_like(mean_T_sim)
 print('Equations')
 
 
-
-
 F1, F2 = np.meshgrid(iter_range, iter_range)
 mean_T_eq = get_T_mean(F1, F2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e)
 CVT2_eq = get_CVT2(F1, F2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
@@ -342,13 +341,12 @@ def convert_negatives_to_nan(array):
     
     return result_array
     
-ignore_negatives = True
+ignore_negatives = 1
 if ignore_negatives == True:
     mean_T_eq = convert_negatives_to_nan(mean_T_eq)
     mean_T_sim = convert_negatives_to_nan(mean_T_sim)
     CVT2_eq = convert_negatives_to_nan(CVT2_eq)
-    CVT2_sim = convert_negatives_to_nan(CVT2_sim)
-    
+    CVT2_sim = convert_negatives_to_nan(CVT2_sim)   
 #%%
 
 contour_levels = 20
