@@ -1,0 +1,177 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define functions for the plots
+def ge(f, c1, k1, M1, p1):
+    return (f * c1 * k1 * M1 * p1) / (k1 + f * p1)
+
+def gi(f, c2, k2, M2, p2, cp, Hp, pmin):
+    return (f * c2 * k2 * M2 * p2) / (k2 + f * p2)
+
+def pi(f, cp, Hp, pmin):
+    return ((cp * f)**Hp + pmin) / (1 + (cp * f)**Hp)
+
+# Define parameter values
+c1 = 0.01; k1 = 10; M1 = 10; p1 = 0.2;
+c2 = 0.015; k2 = 10; M2 = 10; p2 = 0.2;
+cp = 0.013; Hp = 10; pmin = 0.2;
+
+# Define legends
+t1 = r'$g_e$'
+t2 = r'$g_i \cdot p(f)$'
+t3 = r'$g_{IFL} = g_e - g_i \cdot p(f)$'
+
+fontsize = 20
+
+# Generate and customize the plots
+f_values = np.linspace(0.001, 100, 100)
+
+fig, ax = plt.subplots()
+
+ax.plot(f_values, [ge(f, c1, k1, M1, p1) for f in f_values], color='red', label=t1,
+        linestyle = '--')
+ax.plot(f_values, [gi(f, c2, k2, M2, p2, cp, Hp, pmin) * pi(f, cp, Hp, pmin) for f in f_values], 
+        color='blue', label=t2, linestyle = '-.')
+ax.plot(f_values, [ge(f, c1, k1, M1, p1) - gi(f, c2, k2, M2, p2, cp, Hp, pmin) * pi(f, cp, Hp, pmin) for f in f_values], color='black',
+        linewidth=5, label=t3)
+
+ax.tick_params(axis = 'both', labelsize = fontsize)
+
+# Add labels and legend
+ax.set_xlabel('firing frequency, f (Hz)', fontsize=fontsize)
+ax.set_ylabel(r'volts/s', fontsize=fontsize)
+ax.legend(fontsize=fontsize-7)
+
+
+ax.set_xlim([0, 100])
+ax.set_ylim([0, 0.7])
+
+# Show the plot
+plt.tight_layout()
+plt.show()
+
+#%%
+import numpy as np
+import matplotlib.pyplot as plt
+
+p1s = 0.2
+p1e = 0
+p2s = 0.2
+p2e = 0
+cp1 = 0.0125
+cp2 = 0.0125
+Hp1 = 20
+Hp2 = 20
+k1 = 1000
+k2 = 1000
+M1 = 50
+M2 = 200
+c1 = 0.01
+c2 = 0.001
+tauv = 1
+vth = 0.2
+fmax = 100
+imsize = 100
+
+def n2n(array):
+    # Create a copy of the original array to avoid modifying it in-place
+    result_array = array.copy()
+    
+    # Replace negative values with NaN
+    result_array[result_array < 0] = np.nan
+
+    
+    return result_array
+
+
+f1range = np.linspace(1, fmax, imsize)
+f2range = np.linspace(1, fmax, imsize)
+F1, F2 = np.meshgrid(f1range, f2range)
+
+p1 = (p1e * (cp1 * F1)**Hp1 + p1s) / (1 + (cp1 * F1)**Hp1)
+p2 = (p2e * (cp2 * F2)**Hp2 + p2s) / (1 + (cp2 * F2)**Hp2)
+
+Tmean = tauv * np.log(1 / (1 - ((k1 + F1 * p1) * (k2 + F2 * p2) * vth) / ((-c2 * F2 * k2 * M2 * (k1 + F1 * p1) * p2 + c1 * F1 * k1 * M1 * p1 * (k2 + F2 * p2)) * tauv)))
+CVT2 = (k1 * M1 * p1 * (k2 + F2 * p2) * (c1**2 * F1 * (k1 + F2 * p2)**2 * (F1 * (-1 + p1) * p1 + k1 * (-1 + p1 - M1 * p1)) + c2**2 * F2 * (k1 + F1 * p1)**2 * (F2 * p1 * (-1 + p2) + k1 * (-1 - M1 * p1 + p2))) * vth * (-2 * c1 * F1 * k1 * M1 * p1 * (k2 + F2 * p2) * tauv + (k1 + F1 * p1) * (2 * c2 * F2 * k2 * M2 * p2 * tauv + (k2 + F2 * p2) * vth))) / (2 * (k1 + F1 * p1) * (k1 + F2 * p1)**2 * (c2 * F2 * k2 * M2 * (k1 + F1 * p1) * p2 - c1 * F1 * k1 * M1 * p1 * (k2 + F2 * p2))**2 * tauv**3 * (-((c1 * F1 * k1 * M1 * p1) / (k1 + F1 * p1)) + (c2 * F2 * k2 * M2 * p2) / (k2 + F2 * p2) + vth / tauv)**2 * np.log(1 / (1 - vth / (((c1 * F1 * k1 * M1 * p1) / (k1 + F1 * p1)) - (c2 * F2 * k2 * M2 * p2) / (k2 + F2 * p2)) * tauv))**2)
+
+Tmean = n2n(Tmean)
+CVT2 = n2n(CVT2)
+
+
+fig, ax = plt.subplots()
+fontsize = 18
+im = ax.imshow(1 / n2n(Tmean), cmap = 'viridis', origin = 'lower')
+cbar = plt.colorbar(im,  label = "output frequency, $(Hz)$")
+cbar.ax.tick_params(labelsize = fontsize)
+cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation = -90, labelpad = 30)
+ax.set_ylabel('inhibitory firing frequency, $f_i$', fontsize = fontsize)
+ax.set_xlabel('excitatory firing frequency, $f_e$', fontsize = fontsize)
+ax.tick_params(axis = 'both', labelsize = fontsize)
+plt.tight_layout()
+
+plt.show()
+#%%
+import numpy as np
+import matplotlib.pyplot as plt
+
+p1s = 0.2
+p1e = 0
+p2s = 0.2
+p2e = 0
+cp1 = 0.0125
+cp2 = 0.0125
+Hp1 = 20
+Hp2 = 20
+k1 = 1000
+k2 = 1000
+M1 = 50
+M2 = 200
+c1 = 0.01
+c2 = 0.001
+tauv = 1
+vth = 0.2
+fmax = 100
+imsize = 100
+
+def n2n(array):
+    # Create a copy of the original array to avoid modifying it in-place
+    result_array = array.copy()
+    
+    # Replace negative values with NaN
+    result_array[result_array < 0] = np.nan
+    
+    return result_array
+
+f1range = np.linspace(1, fmax, imsize)
+f2range = np.linspace(1, fmax, imsize)
+F1, F2 = np.meshgrid(f1range, f2range)
+
+p1 = (p1e * (cp1 * F1)**Hp1 + p1s) / (1 + (cp1 * F1)**Hp1)
+p2 = (p2e * (cp2 * F2)**Hp2 + p2s) / (1 + (cp2 * F2)**Hp2)
+
+Tmean = tauv * np.log(1 / (1 - ((k1 + F1 * p1) * (k2 + F2 * p2) * vth) / ((-c2 * F2 * k2 * M2 * (k1 + F1 * p1) * p2 + c1 * F1 * k1 * M1 * p1 * (k2 + F2 * p2)) * tauv)))
+CVT2 = (k1 * M1 * p1 * (k2 + F2 * p2) * (c1**2 * F1 * (k1 + F2 * p2)**2 * (F1 * (-1 + p1) * p1 + k1 * (-1 + p1 - M1 * p1)) + c2**2 * F2 * (k1 + F1 * p1)**2 * (F2 * p1 * (-1 + p2) + k1 * (-1 - M1 * p1 + p2))) * vth * (-2 * c1 * F1 * k1 * M1 * p1 * (k2 + F2 * p2) * tauv + (k1 + F1 * p1) * (2 * c2 * F2 * k2 * M2 * p2 * tauv + (k2 + F2 * p2) * vth))) / (2 * (k1 + F1 * p1) * (k1 + F2 * p1)**2 * (c2 * F2 * k2 * M2 * (k1 + F1 * p1) * p2 - c1 * F1 * k1 * M1 * p1 * (k2 + F2 * p2))**2 * tauv**3 * (-((c1 * F1 * k1 * M1 * p1) / (k1 + F1 * p1)) + (c2 * F2 * k2 * M2 * p2) / (k2 + F2 * p2) + vth / tauv)**2 * np.log(1 / (1 - vth / (((c1 * F1 * k1 * M1 * p1) / (k1 + F1 * p1)) - (c2 * F2 * k2 * M2 * p2) / (k2 + F2 * p2)) * tauv))**2)
+
+Tmean = n2n(Tmean)
+CVT2 = n2n(CVT2)
+
+fig, ax = plt.subplots()
+fontsize = 18
+contour_levels = 10  # Adjust levels as needed
+# Contourf plot
+im = ax.contourf(F1, F2, 1 / Tmean, cmap='viridis', levels = contour_levels)
+
+# Add contours
+
+contour = ax.contour(F1, F2, 1 / Tmean, levels=contour_levels, colors='black', linewidths=1)
+
+cbar = plt.colorbar(im, label="output frequency, $(Hz)$")
+cbar.ax.tick_params(labelsize=fontsize)
+cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation=-90, labelpad=30)
+
+ax.set_ylabel('inhibitory firing frequency, $f_i$', fontsize=fontsize)
+ax.set_xlabel('excitatory firing frequency, $f_e$', fontsize=fontsize)
+ax.tick_params(axis='both', labelsize=fontsize)
+
+plt.tight_layout()
+plt.show()
