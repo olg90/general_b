@@ -6,40 +6,45 @@ def ge(f, c1, k1, M1, p1):
     return (f * c1 * k1 * M1 * p1) / (k1 + f * p1)
 
 def gi(f, c2, k2, M2, p2, cp, Hp, pmin):
-    return (f * c2 * k2 * M2 * p2) / (k2 + f * p2) * pi(f, cp, Hp, pmin)
+    return (f * c2 * k2 * M2 * p2) / (k2 + f * p2)
 
 def pi(f, cp, Hp, pmin):
     return ((cp * f)**Hp + pmin) / (1 + (cp * f)**Hp)
 
 # Define parameter values
-c1, k1, M1, p1 = 0.02, 10, 100, 0.1
-c2, k2, M2, p2 = 0.02, 10, 100, 0.2
-cp, Hp, pmin = 0.013, 7, 0.2
+c1 = 0.02; k1 = 10; M1 = 100; p1 = 0.2;
+c2 = 0.025; k2 = 10; M2 = 100; p2 = 0.2;
+cp = 0.013; Hp = 10; pmin = 0.2;
 
 # Define legends
 t1 = r'$g_e$'
 t2 = r'$g_i \cdot p(f)$'
 t3 = r'$g_{IFL} = g_e - g_i \cdot p(f)$'
 
+fontsize = 20
+
 # Generate and customize the plots
 f_values = np.linspace(0.001, 100, 100)
 
 fig, ax = plt.subplots()
 
-ax.plot(f_values, [ge(f, c1, k1, M1, p1) for f in f_values], color='red', label=t1)
-ax.plot(f_values, [gi(f, c2, k2, M2, p2, cp, Hp, pmin) for f in f_values], color='blue', label=t2)
-ax.plot(f_values, [ge(f, c1, k1, M1, p1) - gi(f, c2, k2, M2, p2, cp, Hp, pmin) * pi(f, cp, Hp, pmin) for f in f_values], color='black',linewidth = 2 ,label=t3)
+ax.plot(f_values, [ge(f, c1, k1, M1, p1) for f in f_values], color='red', label=t1,
+        linestyle = '--')
+ax.plot(f_values, [gi(f, c2, k2, M2, p2, cp, Hp, pmin) * pi(f, cp, Hp, pmin) for f in f_values], 
+        color='blue', label=t2, linestyle = '-.')
+ax.plot(f_values, [ge(f, c1, k1, M1, p1) - gi(f, c2, k2, M2, p2, cp, Hp, pmin) * pi(f, cp, Hp, pmin) for f in f_values], color='black',
+        linewidth=5, label=t3)
+
+ax.tick_params(axis = 'both', labelsize = fontsize)
 
 # Add labels and legend
-ax.set_xlabel('firing frequency, f (Hz)', fontsize=14)
-ax.set_ylabel(r'value of g, $(volts)$', fontsize=14)
-ax.legend(fontsize=12)
+ax.set_xlabel('firing frequency, f (Hz)', fontsize=fontsize)
+ax.set_ylabel(r'volts/s', fontsize=fontsize)
+ax.legend(fontsize=fontsize-7)
+
 
 ax.set_xlim([0, 100])
-ax.set_ylim([0, 12])
-
-# Title
-plt.title('Impact on IFL Functions', fontsize=16, weight='bold')
+ax.set_ylim([0, 14])
 
 # Show the plot
 plt.tight_layout()
