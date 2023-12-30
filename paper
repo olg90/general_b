@@ -1,0 +1,501 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
+
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+
+%\overrideIEEEmargins 
+% Needed to meet printer requirements.
+\usepackage{graphicx} %puts images in the right place
+\usepackage{blindtext}
+\usepackage{dblfloatfix}
+\usepackage{graphicx,graphics}
+\usepackage{amsmath,amsfonts,mathrsfs,amssymb,dsfont,mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+%\usepackage{float}%
+
+%\usepackage[demo]{graphicx}
+%\usepackage{mathtools}
+%\usepackage{ stmaryrd }
+\usepackage{cite}
+%\usepackage[labelfont=bf,labelsep=period,justification=justified]{caption}
+%\usepackage{sidecap}
+%\sidecaptionvpos{figure}{l}
+\usepackage{bbm}
+\usepackage{color}
+\usepackage{mathtools}
+\usepackage{arydshln}
+%\usepackage{subfigure}
+%\usepackage{flushend}
+\usepackage{cuted}
+%\setlength{\parskip}{0.015em}
+\usepackage{graphicx}
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+\begin{document}
+
+
+\title{\LARGE \bf
+NEEDS TITLE
+}
+
+\author{Oliver Gambrell$^{1}$,  and Abhyudai Singh$^{2}$% <-this % stops a space
+%\thanks{*This work is supported by NSF organization}% <-this % stops a space
+\thanks{$^{1}$O. Gambrell is with the Department of Electrical and Computer Engineering, University of Delaware, Newark, DE USA 19716.  \texttt{olg@udel.edu}}%
+\thanks{$^{2}$A. Singh is with the Department of Electrical and Computer Engineering, Biomedical Engineering, Mathematical Sciences, Center for Bioinformatics and Computational Biology, University of Delaware, Newark, DE USA 19716. \texttt{absingh@udel.edu}}%
+}
+\maketitle
+
+\thispagestyle{empty}
+\pagestyle{empty}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+NEED ABSTRACT
+
+\end{abstract}
+
+\section{Introduction}
+
+\section{Methods}
+
+This section provides a detailed overview of the Stochastic Hybrid System (SHS) model used to compare the three networks.  For refernece, all model parameters used are summarized in Table \ref{T1}.
+\begin{center}
+\fontsize{8}{9}\selectfont % Set font size to 8pt with 9pt line spacing
+\begin{table}[h!]
+\caption{Model Parameters}\label{T1}
+\begin{tabular}{ |l|c|l|l| } 
+\hline
+ & Parameter & Description \\
+\hline
+& $b$ & number of released vesicles \\ 
+ & $M$ & number of docking sites \\ 
+ presynaptic& $p_r$ & probability of vesicle release per site\\ 
+ neuron& $n$ & number of docked vesicles \\ 
+ & $k$ & refilling rate per vesicle, $sec^{-1}$ \\ 
+ & $f$ & AP frequency, $Hz$ \\ 
+ & $v_b$ & voltage contribution term (VCT), $volts$\\
+ & $f \langle v_b \rangle$ & voltage contribution rate (VCR), $volts/s$\\
+
+\hline
+ & $T$ & First passage time \\ 
+ postsynaptic& $v_{th}$ & AP-firing threshold, $volts$ \\ 
+ neuron& $\tau_v$ & membrane time constant, $sec$\\ 
+ & $v$ & membrane potential, $volts$\\ 
+\hline
+\end{tabular}
+\end{table}
+\end{center}
+
+\subsection{General model formulation}
+
+The arrival times of APs are modeled by a Poisson process with rate $f$, meaning that the time between action potentials is exponentially distributed with mean time $1/f$ (Fig.~\ref{fig:SHS_model}).  When an action potential arrives from the presynaptic neuron, the postynaptic neuron's membrane potential, modeled here by the random process $v(t)$, changes by an amount $v_b$, a random variable representing the amount of voltage introduced into the postynaptic neuron due to the release of neurotransmitter-filled vesicles and can be either positive or negative depending on the neural circuit that $v_b$ models.  In this paper, $v_b$ will be referred to as the voltage contribution term (VCT).
+
+ Between action potentials, the membrane potential decays exponentially with rate $-1/\tau_v$, and when an action potential arrives that increases the membrane potential to a point above its AP-firing threshold, $v_{th}$, the downstream neuron fires an AP and resets its membrane potential to $0$.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=.9
+\linewidth]{figs/SHS_model.png}
+%\vspace*{-3mm}
+\caption{\textbf{Stochastic Hybrid System model formulation -} The membrane potential of a postynaptic neuron decays exponentially with decay membrane time constant $\tau_v$. The time between action potentials is modeled by an exponential random variable with mean time $\frac{1}{f}$, and after receiving an action potential the postynaptic neuron changed its voltage by an amount $v_b$. The parameter $v_b$ is a random variable whose output depends on the underlying neural circuit chosen for $v_b$. }\label{fig:SHS_model}
+\end{figure}
+
+\subsection{Derivation and characterization of $\langle T \rangle$} \label{sec:Tmeansec}
+
+The first-passage time for the SHS in Fig.~\ref{fig:SHS_model} will be derived using moment dynamics \cite{abc}.  The first and second order moments  of $v(t)$ are
+
+\begin{align}
+\frac{d \langle v(t) \rangle}{dt} &= f\langle v_b \rangle - \frac{\langle v(t) \rangle }{\tau_v} \label{vmean} \\
+\frac{d \langle v^2(t) \rangle}{dt} &= f \langle v^2_b \rangle + 2f \langle v_b \rangle \langle v(t) \rangle - \frac{2 \langle v^2(t) \rangle }{\tau_v},\label{v2mean}
+\end{align}
+
+and, with initial condition $\langle v(0) \rangle = 0$, the solution to \eqref{vmean} is 
+
+\begin{equation}
+\langle v(t) \rangle = f \tau_v \langle v_b \rangle \left(1 - e^{\frac{-t}{\tau_v}}\right). \label{vtmean}
+\end{equation}
+
+Making the approximation 
+
+\begin{equation}
+\langle v(t) \rangle |_{t = \langle T \rangle} \approx v_{th} \label{vmeanapprox}
+\end{equation}
+
+and substituting (\ref{vmeanapprox}) into (\ref{vtmean}) yields
+
+\begin{equation}
+\langle T \rangle \approx \tau_v \log\left(\frac{1}{1 - \frac{v_{th}}{f  \langle v_b \rangle \tau_v}}\right),\label{Tmean}
+\end{equation}
+
+which is defined for 
+
+\begin{equation}
+f \langle v_b \rangle \tau_v> v_{th}.\label{fv_b}
+\end{equation}
+
+The left-hand side of equation (\ref{fv_b}) represents the expected amount of voltage added to the postsynaptic neuron in the time it takes for the neuron to decay to about $36.79\%$ of its resting potential.  If this is not satisfied then the postsynaptic neuron on average is not receiving enough voltage from the presynaptic neuron to exceed its action-potential firing threshold.  Biologically, this means: if the membrane time constant is small then the rate of decay will be large and the neuron will be closer to its resting potential when the next action potential arrives, which essentially reduces the cumulative effect of membrane potential buildup required for firing an action potential.  The expression 
+\begin{equation}  
+g(f) = f \langle v_b \rangle \label{VCR}
+\end{equation} 
+will be referred to as the voltage contribution rate (VCR) in this paper.
+
+In the pure integrator case, we have 
+
+\begin{equation}
+\lim_{{\tau_v \to \infty}} \langle T \rangle = \frac{v_{th}}{f \langle v_b \rangle}, \label{tauinfT}
+\end{equation}
+
+which grows less quickly than (\ref{Tmean}).  This implies that the leaky-integrator case is more sensitive to changes in $v_{th}$ than the 
+pure-integrator case and can be seen when comparing the two cases. In the pure-integrator case, the only contributing factors to the mean FPT calculation are the times between received action potentials and the total number of vesicles released, while in the leaky-integrator case there is a third factor of membrane potential decay between received action potentials.  This membrane potential decay requires additional releases of vesicles in order for the postsynaptic neuron to exceed it's AP-firing threshold, which increases the mean FPT.
+
+\subsection{Derivation and characterization of $CV_T^2$}
+Noise in inter-AP time is measured by coefficient of variation squared, defined by
+
+\begin{equation}
+CV_T^2 := \frac{\langle T^2 \rangle - \langle T \rangle ^2}{\langle T \rangle ^2}.
+\end{equation}
+
+In calculating $CV_T^2$, a geometric approximation \cite{ABCD} 
+
+\begin{equation}
+CV_T^2 \approx \frac{v_{th}^2}{\langle T \rangle^2} \left( \frac{d \langle v(t) \rangle}{dt}|_{t = \langle T \rangle} \right) CV_v^2(\langle T \rangle)
+\end{equation}
+
+with
+
+\begin {equation}
+CV_v^2(\langle T \rangle) = \frac{\langle v^2(t) \rangle - \langle v(t) \rangle ^2}{\langle v(t) \rangle ^2}|_{t = \langle T \rangle}
+\end{equation} 
+
+is made and results in
+
+\begin{equation}
+CV_T^2 = \frac{v_{th} (2f\tau_v \langle v_b \rangle - v_{th}) \langle v^2_b \rangle}{2f\tau_v \langle v_b \rangle^2 (v_{th} - f\tau_v \langle v_b \rangle)^2 \log\left(1-\frac{1}{1 - \frac{f \tau_v \langle v_b \rangle}{v_{th}}}\right)^2}, \label{CVT2}
+\end{equation}
+
+which is defined for 
+
+\begin{equation}
+\frac{f \tau_v \langle v_b \rangle}{v_{th}} \neq 0.
+\end{equation}
+
+In order for $CV^2_T$ to be positive, it must be the case that $2 \tau_v f \langle v_b \rangle > v_{th}$, which is satisfied when $\langle T \rangle$ is defined as in (\ref{fv_b}).
+
+
+For each set of parameters $\tau_v, f, \langle v_b \rangle$, there is a value of $v_{th}$ that minimizes $CV^2_T$.  In showing this, we first take the derivative of $CV^2_T$ and solve for the critical points, which gives us
+$$v_{th}^2-2Av_{th}=A^2\log \left(\frac{A-v_{th}}{A}\right), A = \tau_v f \langle v_b \rangle.$$
+
+This can be written as
+
+\begin{equation}
+(v_{th}-A)^2 - A^2 = A^2\log \left( \frac{A - v_{th}}{A}\right) \label{vtheq}
+\end{equation}
+
+and has two solutions: $v_{th}=0$ and $v^*_{th}$, where $v_{th}^*$ is the intersection between the two curves representing the AP-firing threshold voltage that minimizes the $CV^2_T$ and lies between 
+
+\begin{equation}
+\tau_v f \langle v_b \rangle(\frac{\sqrt{2}-1}{\sqrt{2}}) \text{ and } \tau_v f \langle v_b \rangle. \label{vstarlim}
+\end{equation}
+
+ This can be derived from setting the derivatives of the LHS and RHS of (\ref{vtheq}) equal to each other and solving for $v_{th}$.  Because both curves in (\ref{vtheq}) start at zero and the slope of the LHS is more negative initially than the slope of the RHS, and the slope of the LHS is increasing at a constant rate and the slope of the RHS is decreasing, there must be an intersection point.
+ 
+ In the pure-integrator case we have
+
+\begin{equation}
+\lim_{{\tau_v \to \infty}} CV_T^2 = \frac{\langle v^2_b \rangle}{v_{th} \langle v_b \rangle}.
+\end{equation}
+
+From this we can see that noise is inversely proportional to $v_{th}$ and can be intuitively explained using the same reasoning in the paragraph following equation (\ref{tauinfT}).
+
+\subsection{Conditions for bandpass characteristics} \label{sec:gsection}
+
+We now discuss the conditions under which $\langle T \rangle$ exhibits bandpass characteristics.  Letting
+\begin{equation}
+g(f) := f \langle v_b \rangle \label{gof},
+\end{equation}
+we have 
+\begin{equation}
+\langle T \rangle \approx \tau_v \log\left(\frac{1}{1 - \frac{v_{th}}{g(f) \tau_v}}\right),\label{Tmean}
+\end{equation}
+where 
+\begin{equation}
+g(f) > \frac{v_{th}}{\tau_v}.\label{Tmean}
+\end{equation}
+Since
+\begin{equation}
+\frac{d \langle T \rangle}{dg} = \frac{-v_{th}}{g(g- \frac{v_{th}}{\tau_v})},
+\end{equation}
+we know that $\langle T \rangle$ is a decreasing function of $g$ that is approximately infinite near $g=\frac{v_{th}}{\tau_v}$ and zero in the limiting case as $g \rightarrow \infty$.  This implies that $\langle T \rangle$ exhibits bandpass characteristics if: $g(f)$ starts off small, increases to a high point, and then decreases to a smaller value.   By (\ref{gof}), this means that the net excitatory effects of the neural circuit must at some point begin to reduce after reaching a maximum value.  This can occur as either an excitatory-presyanptic circuit lowering the net voltage it introduces into the postsynaptic neuron or as a presynaptic-neural circuit with both excitatory and inhibitory components where the voltage introduced by the inhibitory components begin to get close to the voltage introduced by the excitatory components.
+
+\textcolor{red}{Since $g(f)$ must reach a maximum value before descending,  this means that $g'(f) = 0$ for some critical frequency $f^*$, which means that \begin{equation} f \frac{d \langle v_b \rangle}{df}+\langle v_b \rangle = 0\label{deqg}\end{equation}
+must have a positive-valued solution, which exists and is the solution of  $f \langle v_b \rangle = C$ for some constant $C$ which is found from solving (\ref{deqg}).}
+Since 
+
+\begin{equation}
+\frac{d \langle T \rangle}{df} = \left(\frac{-v_{th}}{g(g-\frac{v_{th}}{\tau_v})}\right)g'(f),
+\end{equation}
+
+It must be the case that $g'(f)$ is positive for $f < f^*$ , is zero at $f^*$, and is negative for $f > f^*$.  \textcolor{red}{Said another way, it must be the case that $f \langle v_b \rangle > C$ for $f < f^*$ and $f \langle v_b \rangle < C$ for $f > f^*$.}
+
+\subsection{Network models}
+
+ In this paper, the form of $v_b$ will be modeled by three networks: an open-loop (OL) model, an excitatory-inhibitory (EI) model, and an incoherent feedforward loop (IFL) model.  (Fig.~\ref{fig:models})
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/model_simple.png}
+%\vspace*{-3mm}
+\caption{The three neuron models: open loop (OL), excitatory-inhibitory (EI), and incoherent feed forward} loop.  The red neurons are excitatory, the blue neurons are inhibitory, and the purple neurons are the postsynaptic neurons being measured.\label{fig:models}
+\end{figure}
+ 
+ \subsubsection{OL model} \label{secsec: OLsec}
+ The OL model (Fig.~\ref{fig:models}, top panel) consists of  an excitatory presynaptic neuron firing action potential into a postsynaptic neuron.  When the presynaptic neuron fires an action potential, it releases a number of neurotransmitter-containing vesicles and adds voltage to the postsynaptic neuron proportional to the number of vesicles released. Symbolically,  \begin{equation}
+ v_b = c_eb_e
+\end{equation}
+where $c_e$ is a proportionality constant and $b_e$ is a random variable representing the number of vesicles released by the excitatory presynaptic neuron during the action potential.  We calculate the mean of $v_b$ as
+
+\begin{equation}
+\langle v_b \rangle = c_e \langle b_e \rangle,
+\end{equation}
+where $\langle b_e \rangle$ is the expected value of the number of vesicles released by the presynaptic neuron. 
+
+If we let $b_e$ be binomially distributed as in our previous paper, then $\langle b_e \rangle = p_e \langle n_e \rangle$, where $n_e$ is the number of filled docking sites on the presynaptic neuron.  We make the steady-state approximation $\langle b_e \rangle =  p_e \overline{\langle n_e \rangle}$ which yields 
+\begin{equation}
+\langle b_e \rangle = p_e\overline{\langle n_e \rangle} = \frac{p_e k_e M_e}{fp_e + k_e}.  \label{bemean}
+\end{equation}
+Substitution of this into (\ref{gof}) yields
+\begin{equation}
+g_{OL}(f) = f \langle v_{b} \rangle = \frac{f c_e p_e k_e M_e}{fp_e + k_e}  \label{beg}.
+\end{equation}
+In analyzing (\ref{beg}),  we find that 
+\begin{equation}
+g'_{OL}(f) = \frac{c_e k^2_e M_e p_e}{(k_e + f p_e)^2} \label{gpol}
+\end{equation}
+does not exhibit bandpass characteristics since $g'_{OL}(f)$ is positive for all $f > 0$, which means that $\langle T_{OL} \rangle$ is increasing with increasing $f$.  Specifically, $g_{OL}(f)$ begins from zero and increases at a decreasing rate to the limiting case $c_ek_eM_e$.
+If we let $p_r$ be a function of $f$ as 
+\begin{equation}
+p_e(f) = \frac{p_{0}}{1+(c_p f)^{H_p}}
+\label{phill}
+\end{equation}
+and substitute this into  (\ref{gpol}), we get 
+
+\begin{equation}
+g'_{OL}(f) = \frac{c_e (1 - (c_p f)^{H_p} (-1 + H_p)) k^2_e M_e p_0)}{(k_e + (c_p f)^{H_p} k + 
+  f p_0)^2}.
+\end{equation}
+This has the single positive critical point
+\begin{equation}
+f ^*= \frac{\left(\frac{1}{H_{p}-1}\right)^{\frac{1}{H_p}}}{c_p},
+\end{equation}
+which is positive for $H_p > 1$.  Since there's only one positive critical point we can see that for sufficiently small $f$  we obtain a positive $g'(f)$ and for a sufficiently large $f$ we obtain a negative $g'(f)$, thus ensuring that $\langle T_{OL}\rangle$ exhibits bandpass characteristics.  The same analysis can be performed by making $M$ and $c$ similar functions of $f$.\\
+
+ \subsubsection{IFL Model}
+ 
+The IFL model (Fig.~\ref{fig:models}, bottom pannel) consists of three neurons: an excitatory neuron, an interneuron, and a postsynaptic neuron.  The excitatory neuron terminates on the postsynaptic neuron and the interneuron, and the interneuron terminates on the postsynaptic neuron.  Biologically, after receiving a sufficient number of action potentials, the interneuron will fire it's own action potential and reduce the membrane voltage of the postsynaptic neuron.  To model this circuit as a reset for the SHS model in Fig.~\ref{fig:SHS_model}, we again utilize the properties of Bernoulli random variables.  Specifically: when the postsynaptic neuron receives an action potential from the excitatory presynaptic neuron, it updates its voltage by $c_eb_e$, and with some probability, $p(f)$, the interneuron will fire and will reduce this quantity by $c_i b_i$, where $b_i$ represents the number of vesicles released from the inhibitory interneuron.   The VCT equation for this model is then
+\begin{equation}
+v_b = c_eb_e - c_ib_iB_f, \label{vIFL}
+\end{equation}
+where
+
+\begin{equation}
+ B_f = \begin{cases} 
+      1, & \text{Probability($B_f=1$)} = p(f)\\
+      0, & \text{Probability($B_f=0$)} = 1 - p(f)
+   \end{cases}
+\end{equation}
+
+and $p(f)$ is the probability that a neuron fires given that it receives an action potential.  We define $p(f)$ as
+
+\begin{equation}
+p(f) = \frac{{(c_p f)^{H_p} + p_{min}}}{{1 + (c_p f)^{H_p}}},\label{pfifl}
+\end{equation}
+representing \textcolor{red}{an interneuron where high firings of the presynaptic neuron induce a higher probability of firing in the interneuron.} The parameter $c_p$ is the "inverse center parameter" which the "gradient parameter" $H_p$ controls.  Specifically, for a large $H_p$ value the hill function essentially looks like $p_{min}$ before $c_p$, raises to $1$ at $1/c_p$, and then remains $1$ for all $f > 1/c_p$.  By decreasing the value of $H_p$, the sharpness of the transition from $p_{min}$ to $1$ is reduced and the transition becomes more gradual. 
+The mean of $v_b$ in (\ref{vIFL}) is
+
+\begin{equation}
+\langle v_b \rangle = c_e \langle b_e \rangle - c_i \langle b_i \rangle p(f)
+\end{equation}
+and substitution into (\ref{gof}) yields
+
+$$g_{IFL}(f) = $$
+\begin{equation}
+\left( \frac{f c_e k_e M_e p_e}{k_e + f p_e} - \frac{f c_i k_i M_i p_i}{k_i + f p_i} \left( \frac{(c_p f)^{H_p}+p_{min}}{1 + (c_p f)^{H_p}}\right)  \right) \label{gifl}
+\end{equation}
+
+An intuitive analysis of (\ref{gifl}) shows that $g_{IFL}$ satisfies the bandpass characteristics and is as follows.  The first expression on the right-hand side of (\ref{gifl}) represents (\ref{beg}) and will be defined as $g_e$, and the adjacent similar term represents the inhibitory equivalent and will be defined as $g_i$.  Substituting $g_e$ and $g_i$ into (\ref{gifl}) yields
+\begin{equation}
+g_{IFL}(f) = g_e(f) - g_i(f) p(f).
+\end{equation}
+Since $g_e$ and $g_i$ by themselves are increasing functions of $f$ that begin at zero and increase to the limiting rates $c_e M_e k_e$ and $c_i M_i k_i$, respectively, the situation where $g_{IFL}$ exhibits bandpass characteristics occurs when $c_i M_i k_i > c_e M_e k_e$ and $g_i(f)$ is delayed in frequency from reaching its limiting value.  By multiplying $g_i$ by $p(f)$ we can sufficiently delay the approach of $g_i$ to its limiting value, thus creating an intersection between the curves of $g_e$ and $g_i$ as shown in Fig.~\ref{fig:gIFL}.  This intersection is the point where the inhibitory-component exceeds the excitatory component and the bandpass effect occurs.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1
+\linewidth]{figs/IFL_python.png}
+%\vspace*{-3mm}
+\caption{Caption}\label{fig:gIFL}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1
+\linewidth]{figs/IFL_python_2.png}
+%\vspace*{-3mm}
+\caption{Caption}\label{fig:gIFL}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1
+\linewidth]{figs/IFL_python_3.png}
+%\vspace*{-3mm}
+\caption{Caption}\label{fig:gIFL}
+\end{figure}
+
+ \subsubsection{EI Model}
+ 
+The EI model consists of an excitatory and an inhibitory presynaptic neuron firing action potentials at rates $f_e$ and $f_i$, respectively, into a postsynaptic neuron and is represented by the stochastic hybrid system in Fig.~\ref{fig:EI_SHS} and visually in Fig.~\ref{fig:models}, middle pannel.  Upon receiving an action potential, the membrane voltage of the postsynaptic neuron will increase if the action potential is from the excitatory neuron and will decrease if the action potential is from the inhibitory neuron. 
+ 
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/EI_SHS.png}
+%\vspace*{-3mm}
+\caption{Caption}\label{fig:EI_SHS}
+\end{figure}
+Performing a moment dynamics analysis similar to $\S$\ref{sec:Tmeansec} yields 
+
+\begin{equation}
+\langle T_{EI} \rangle =\tau_v\log\left(\frac{1}{1 - \frac{v_{th}}{g(f_e, f_i)\tau_v}}\right)\label{TEI}
+\end{equation}
+where 
+\begin{equation}
+g(f_e,f_i) = \frac{f_e c_e p_e k_e M_e }{k_e+f_e p_e} - \frac{f_i c_i p_i k_i M_i}{k_i+f_i p_i} \label{geifull}
+\end{equation}
+or
+\begin{equation}
+g(f_e, f_i)= g_e(f_e) - g_i(f_i). \label{ggegi}
+\end{equation}
+The VCR is now a function of both the input and output frequency and can be analyzed for bandpass effects using the methods of $\S$\ref{sec:gsection}.
+
+Because both VCRs in (\ref{ggegi}) are increasing at a decreasing rate, bandpass effects are not possible if we fix the frequency of the excitatory VCR and vary the frequency of the inhibitory VCR.  Instead, lowpass effects will occur because by subtracting an increasing-at-a-decreasing-rate function from a fixed value, the difference starts from zero and gradually reduces to the difference between the fixed value and the limiting value of the function.  If the difference is a positive value, then the effect represents a gradual tapering off of the output frequency of the postsynaptic neuron which settles to a lower value.  \textcolor{red}{Something about a neuron protecting itself}.  A similar analysis reveals that highpass effects are observed if we fix the frequency of the inhibitory VCR and vary the frequency of the excitatory VCR.
+
+It is possible to observe bandpass effects if we view curves in the $g(t) =(g_e(t), g_i(t))$-plane as functions of time, i.e. $g_e(t)=g_e(f_e(t))$ and similarly for $g_i$.  Specifically, if with increasing time the excitatory frequency increases to a fixed value followed afterwards by an increase in the inhibitory frequency, the highpass and lowpass effects will be combined and a bandpass effect occurs.  The notch-filter effect is also observable in the $g(t)$-plane if for a fixed value of the excitatory VCR the value of the inhibitory VCR briefly increases and then decreases.
+
+If we let $p_e$ and $p_i$ in (\ref{geifull}) be defined as in (\ref{phill}), then for each fixed value of $f^*_i$ we have bandpass effects when varying $f_e$ which can be explained simply as follows: in \ref{secsec: OLsec} it was observed that $g_e = g_{OL}$ exhibited bandpass effects, and since $g(f_e, f^*_e) = g_e(f_e) - g_i(f^*_i)$ is a bandpass function minus a constant, $g(f_e, f^*_e)$ will be bandpass if $g_e(f_e)$ exceeds the constant at some point.  Similarly, letting $f^*_e$ be fixed and varying $f_i$ leads to a notch filter.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1
+\linewidth]{figs/EI_python.png}
+%\vspace*{-3mm}
+\caption{This is the open loop model}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1
+\linewidth]{figs/EI_python_2.png}
+%\vspace*{-3mm}
+\caption{This is the open loop model}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1
+\linewidth]{figs/EI_python_3.png}
+%\vspace*{-3mm}
+\caption{This is the open loop model}
+\end{figure}
+
+
+
+\textcolor{red}{EVERYTHING BELOW HERE IS JUST A COLLECTION OF RESULTS}\\
+
+
+In the case where the membrane potential is not decaying, for a general distribution we have
+
+and 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+$$\langle T_{OL} \rangle = \frac{1}{f \tau_v \log\left(\frac{1}{1 - \frac{(k + f p_r) v_{th}}{c f k M p_r \tau_v}}\right)}.$$
+
+If $c_e k_e M_e \tau_v$ is slightly larger than $v_{th}$ then $f \rightarrow \infty.$  Also for small firing probabilities $p_e$ we have $f \rightarrow \infty$.
+
+For excitatory-inhibitory we have
+
+$$\langle T_{EI} \rangle =\tau_v\log\left(\frac{1}{1 - \frac{(k_e + f_e p_e)(k_i + f_i p_i) v_{\text{th}}}{\left(-c_e f_i k_i M_i (k_e + f_e p_e) p_i + c_i f_e k_e M_e p_e (k_i + f_i p_i)\right) \tau_v}}\right)$$
+
+Which is defined for
+
+$$\frac{v_{th}}{\tau_v} < \frac{f_e c_e k_e M_e p_e}{k_e+f_e p_e} - \frac{f_i c_i k_i M_i p_i}{k_i+f_i p_i}$$
+
+The next plots are of $\langle T_{OL} \rangle$ where $k,p,c$ is a function of $f$.  They all follow this form $x(f) = x_{max}/(1+(c_x*x^{H_c}))$ where $x_{max}$ is the maximum value of $x$ and $c_x$ is a constant, and $H_x$ is the $H$ parameter for the sigmoidal function where $x = k,p,c$. 
+
+Following are plots of the general case, the IFL case, and the excitatory-inhibitory case.  I'm still trying to analyze them for biological significance and to determine parameters where they match a simulation.
+
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/c_function_of_f.png}
+%\vspace*{-3mm}
+\caption{c as a function of f, still tuning these parameters and looking to find why the CVT2 is not matching well}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/k_function_of_f.png}
+%\vspace*{-3mm}
+\caption{k as a function of f, still tuning these parameters and looking to find why the CVT2 is not matching well}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/p_function_of_f.png}
+%\vspace*{-3mm}
+\caption{p as a function of f, still tuning these parameters and looking to find why the CVT2 is not matching well}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/general_b_test.png}
+%\vspace*{-3mm}
+\caption{This is the open loop model}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/IFL.png}
+%\vspace*{-3mm}
+\caption{IFL is not matching yet, I'm working on finding the parameter space where these match up better}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.8
+\linewidth]{figs/EI_model_graphic.jpg}
+%\vspace*{-3mm}
+\caption{Excitatory-inhibitory model, working on finding characterizing this parameter space and finding biological relevence.}\label{fig:excinh}
+\end{figure}
+
+\end{document}
