@@ -31,7 +31,7 @@ def get_arg_type(i):
     if i == 0:
         return 'f1'
     if i == 1:
-        return 'f1'
+        return 'f2'
     if i == 2:
         return 'n1'
     if i == 3:
@@ -90,7 +90,7 @@ def run_test(args):
     while current_time < run_time:
         
         time_to_f1 = get_time_to('f1', args, n1, n2) # next reaction time
-        time_to_f2 = get_time_to('f1', args, n1, n2) # next reaction time
+        time_to_f2 = get_time_to('f2', args, n1, n2) # next reaction time
         time_to_n1 = get_time_to('n1', args, n1, n2)
         time_to_n2 = get_time_to('n2', args, n1, n2)
             
@@ -269,14 +269,14 @@ def get_equations(params):
 # Values of c to test
 run_time = 15
 
-M1 = 50
-M2 = 200
+M1 = 100
+M2 = 100
 
 c1 = 0.01
 c2 = 0.001
 
-k1 = 1000
-k2 = 1000
+k1 = 10
+k2 = 10
 
 p1s = 0.2
 p1e = 0
@@ -349,25 +349,52 @@ if ignore_negatives == True:
     CVT2_sim = convert_negatives_to_nan(CVT2_sim)   
 #%%
 
-contour_levels = 20
 fig, ax = plt.subplots(2,2)
-im1 = ax[0,0].contourf(F1, F2, 1/mean_T_eq, cmap='viridis', levels=contour_levels)
-ax[0,0].contour(F1, F2, 1/mean_T_eq, colors='black', levels=contour_levels, linewidths=1, linestyles = 'solid')
+
+vmaxm = np.max([np.max([x for x in (1/mean_T_eq).flatten() if np.isnan(x) == False]), np.max([x for x in (1/mean_T_sim.flatten()) if np.isnan(x) == False])])
+vmaxc= np.max([np.max([x for x in CVT2_eq.flatten() if np.isnan(x) == False]), np.max([x for x in CVT2_sim.flatten() if np.isnan(x) == False])])
+
+im1 = ax[0,0].imshow(1/mean_T_eq, cmap='viridis', vmin =  0, vmax = vmaxm)
 plt.colorbar(im1, label='1/<T_eq>')
 
-im2 = ax[0,1].contourf(F1, F2, 1/mean_T_sim, cmap='viridis', levels=contour_levels)
-ax[0,1].contour(F1, F2, 1/mean_T_sim, colors='black', levels=contour_levels, linewidths=1)
+im2 = ax[0,1].imshow(1/mean_T_sim.T, cmap='viridis', vmin = 0, vmax = vmaxm)
 plt.colorbar(im2, label='1/<T_sim>')
 
-im3 = ax[1,0].contourf(F1, F2, CVT2_eq, cmap='viridis', levels=contour_levels)
-ax[1,0].contour(F1, F2, CVT2_eq, colors='black', levels=contour_levels, linewidths=1)
+im3 = ax[1,0].imshow(CVT2_eq, cmap='viridis', vmin = 0, vmax = vmaxc)
 plt.colorbar(im3, label='CVT2_eq')
 
-im4 = ax[1,1].contourf(F1, F2, CVT2_sim, cmap='viridis', levels=contour_levels)
-ax[1,1].contour(F1, F2, CVT2_sim, colors='black', levels=contour_levels, linewidths=1)
+im4 = ax[1,1].imshow(CVT2_sim.T, cmap='viridis', vmin = 0, vmax = vmaxc)
 plt.colorbar(im4, label='CVT2_sim')
 
 plt.tight_layout()
 
 plt.show()
 
+#%%
+
+shrinkval = 0.5
+fontsize = 20
+color = 'hot'
+fig, ax = plt.subplots(1,2)
+
+vmaxval = np.max([np.max([x for x in 1/mean_T_eq.flatten() if np.isnan(x) == False]), np.max([x for x in 1/mean_T_sim.flatten() if np.isnan(x) == False])])
+
+im0 = ax[0].imshow(1/mean_T_eq, cmap=color, origin ='lower', vmin = 0, vmax = vmaxval)
+im1 = ax[1].imshow(1/mean_T_sim.T, cmap=color, origin = 'lower', vmin = 0, vmax = vmaxval)
+ax[1].set_yticks([])
+ax[0].set_xlabel('\t\t\t\t\texcitatory frequency, $f_e$ $(Hz)$', fontsize = fontsize)
+ax[0].set_ylabel('inhibitory frequency, $f_i$ $(Hz)$', fontsize = fontsize)
+ax[0].tick_params(axis='both', labelsize = fontsize)
+ax[1].tick_params(axis='both', labelsize = fontsize)
+
+ax[0].set_title('equation', fontsize = fontsize)
+ax[1].set_title('simulations', fontsize = fontsize)
+
+cax = fig.add_axes([0.875, 0.2, 0.02, 0.7])  # Adjust these values to position the colorbar
+cbar = fig.colorbar(im1, cax=cax, label = 'output frequency')
+cbar.ax.tick_params(labelsize=fontsize)
+cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation=-90, labelpad= 30)
+plt.subplots_adjust(top=0.928, bottom=0.155, left=0.084, right=0.875, hspace=0.2, wspace=0.0)
+
+
+plt.show()
