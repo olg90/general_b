@@ -269,14 +269,14 @@ def get_equations(params):
 # Values of c to test
 run_time = 15
 
-M1 = 100
-M2 = 100
+M1 = 50
+M2 = 200
 
 c1 = 0.01
 c2 = 0.001
 
-k1 = 10
-k2 = 10
+k1 = 100
+k2 = 100
 
 p1s = 0.2
 p1e = 0
@@ -284,13 +284,13 @@ p1e = 0
 p2s = 0.2
 p2e = 0
 
-cp1 = 0.0125
-cp2 = 0.0125
+cp1 = 0.02
+cp2 = 0.03
 
-Hp1 = 20
+Hp1 = 8
 Hp2 = 20
 
-tauv = 1
+tauv = 0.5
 vth = 0.2
 
 delta_t = 0.01
@@ -374,7 +374,7 @@ plt.show()
 
 shrinkval = 0.5
 fontsize = 20
-color = 'hot'
+color = 'viridis'
 fig, ax = plt.subplots(1,2)
 
 vmaxval = np.max([np.max([x for x in 1/mean_T_eq.flatten() if np.isnan(x) == False]), np.max([x for x in 1/mean_T_sim.flatten() if np.isnan(x) == False])])
@@ -382,8 +382,8 @@ vmaxval = np.max([np.max([x for x in 1/mean_T_eq.flatten() if np.isnan(x) == Fal
 im0 = ax[0].imshow(1/mean_T_eq, cmap=color, origin ='lower', vmin = 0, vmax = vmaxval)
 im1 = ax[1].imshow(1/mean_T_sim.T, cmap=color, origin = 'lower', vmin = 0, vmax = vmaxval)
 ax[1].set_yticks([])
-ax[0].set_xlabel('\t\t\t\t\texcitatory frequency, $f_e$ $(Hz)$', fontsize = fontsize)
-ax[0].set_ylabel('inhibitory frequency, $f_i$ $(Hz)$', fontsize = fontsize)
+ax[0].set_xlabel(r'                                                  excitatory frequency, $f_e$ $(Hz)$', fontsize = fontsize)
+ax[0].set_ylabel(r'inhibitory frequency, $f_i$ $(Hz)$', fontsize = fontsize)
 ax[0].tick_params(axis='both', labelsize = fontsize)
 ax[1].tick_params(axis='both', labelsize = fontsize)
 
@@ -391,7 +391,7 @@ ax[0].set_title('equation', fontsize = fontsize)
 ax[1].set_title('simulations', fontsize = fontsize)
 
 cax = fig.add_axes([0.875, 0.2, 0.02, 0.7])  # Adjust these values to position the colorbar
-cbar = fig.colorbar(im1, cax=cax, label = 'output frequency')
+cbar = fig.colorbar(im1, cax=cax, label = r'output frequency,$\langle F \rangle$ $(Hz)$')
 cbar.ax.tick_params(labelsize=fontsize)
 cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation=-90, labelpad= 30)
 plt.subplots_adjust(top=0.928, bottom=0.155, left=0.084, right=0.875, hspace=0.2, wspace=0.0)
