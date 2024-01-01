@@ -26,7 +26,7 @@ def get_arg_type(i):
         return 'nu'
     if i == 2:
         return 'nd'
-    if i == 2:
+    if i == 3:
         return 'measure'
     
 def to_dict(**x):
@@ -139,7 +139,17 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
+def get_T_mean(k, f, pr, c, M, tauv, vth):
+    return tauv * np.log(1 / (1 - ((k + f * pr) * vth) / (c * f * k * M * pr * tauv)))
 
+def get_CVT2(k, f, pr, c, M, tauv, vth):
+    return -(((k + f * pr) * vth * (2 * c * f * k * M * pr * (-1 + k * (-1 + pr) + 
+              f * (-1 + pr) * pr) * tauv + (k + 
+              f * pr) * ((-1 + f * (-1 + pr) * pr) * (-1 + 2 * f * tauv) + 
+              k * (1 - pr + 
+                 2 * f * (-1 + pr + 
+                    M * pr) * tauv)) * vth))/(2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log((c * f * k * M * pr * tauv)/(c * f * k * M * pr * tauv - (k + f * pr) * vth))**2))
+    
 
 def get_equations(f, params):
     
@@ -151,17 +161,16 @@ def get_equations(f, params):
     tauv = params['tauv']
     vth = params['vth']
     
-    denominator = (k+f*pr)*vth/(c*f*k*M*pr*tauv)
-    T_mean = tauv*np.log(1/(1-denominator))
-    
-    A = -(k+f*pr)*(-1+k*(-1+pr) + f*(-1+pr)*pr)
-    B = vth*(2*c*f*k*M*pr*tauv - (k+f*pr)*vth)
-    C = 2*f*k*M*pr*tauv*(c*f*k*M*pr*tauv - (k + f*pr)*vth)**2
-    D = np.log(c*f*k*M*pr*tauv/(c*f*k*M*pr*tauv-(k+f*pr)*vth))
-    
-    CVT2 = A*B/(C*D)
-    
+    T_mean = get_T_mean(k, f, pr, c, M, tauv, vth)
+    CVT2 = get_CVT2(k, f, pr, c, M, tauv, vth)
+
+    CVT2 = -(((k + f * pr) * (-1 + k * (-1 + pr) + f * (-1 + pr) * pr) * vth * (2 * c * f * k * M * pr * tauv - (k + f * pr) * vth)) / (
+        2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log(
+            (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2))
+
     return T_mean, CVT2
+
+
 
 ###############################################################################
 #
@@ -176,14 +185,13 @@ f_vals = np.arange(1,f_max+1)
 
 run_time = 60
 
-Mu = 20
-pu = 0.1
-cu = 0.005
-ku = 2
-
+M = 100
+pr = 0.3
+c = 0.001
+k = 5
 tauv = 1
+vth = 0.2
 
-vth = 0.07
 delta_t = 0.01
 
 Md = 1
@@ -192,8 +200,7 @@ cd = 0
 kd = 1
 
 #
-checkvth = cu * ku * Mu * tauv - vth
-checkf = (vth * ku) / (pu * (cu * ku * Mu * tauv - vth))
+checkf = k*vth/(pr*(c*M*k*tauv-vth))
 ninit = int(np.ceil(checkf))
 #
 
@@ -201,11 +208,11 @@ ninit = int(np.ceil(checkf))
 mean_T_sim = []
 CVT2_sim = []
 
-iter_range = range(ninit, len(f_vals))
+iter_range = range(1, len(f_vals))
 for j, i in enumerate(iter_range):
     f = f_vals[i]
-    params = to_dict(run_time = run_time, f = f, Mu = Mu, Md = Md, 
-        pu = pu, pd = pd, cu = cu, cd = cd, ku = ku,kd = kd, 
+    params = to_dict(run_time = run_time, f = f, Mu = M, Md = Md, 
+        pu = pr, pd = pd, cu = c, cd = cd, ku = k,kd = kd, 
         tauv = tauv, vth = vth, delta_t = delta_t)  
     print(j/len(iter_range))
 
@@ -226,11 +233,17 @@ for i in iter_range:
     
 f_actual = [f for f in iter_range]
 
+
 fig, ax = plt.subplots(1,2)
 ax[0].plot(f_actual, mean_T_sim, label = '<T> Simulations')
 ax[0].plot(f_actual, mean_T_eq, label = '<T> Equation')
+ax[0].set_xlabel('Action potential frequency, (Hz)')
+ax[0].set_ylabel('$\\langle T \\rangle$')
 ax[1].plot(f_actual, CVT2_sim, label = 'CVT2 Simulations')
 ax[1].plot(f_actual, CVT2_eq, label = 'CVT2 Equation')
+ax[1].set_ylabel('$CV_{T}^2$')
 ax[0].legend()
 ax[1].legend()
+
+plt.tight_layout()
 plt.show()
