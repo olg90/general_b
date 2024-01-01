@@ -81,17 +81,17 @@ def run_test(args):
         t_min_arg = np.argmin(times_array)
         arg_type = get_arg_type(t_min_arg)
         t_min = times_array[t_min_arg]
-    
+
         if arg_type == 'f':
-            
+
             preneuron_firing_history.append(current_time)
 
             b1 = np.random.binomial(n1, p1) # Number released
             b2 = np.random.binomial(n2, p2) # Number released
-            B = np.random.binomial(1, pe)
-            
+            B = np.random.binomial(1, pe) # this is a Bernoulli with probability pe
+
             voltage_addition = c1*b1 - c2*b2*B
-        
+
             if (b1 > 0) and (n1 >= b1):
                 n1 -= b1
             if (b2 > 0) and (n2 >= b2):
@@ -153,35 +153,46 @@ def get_pe(f, cp, Hp, pmin):
     return ((cp*f)**Hp+pmin)/(1+(cp*f)**Hp)
 
 
-# =============================================================================
-# def get_T_mean(f, tauv, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, vth):
-#     inner_expression = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
-#     denominator = 1 - vth / (f * inner_expression * tauv)
-#     result = tauv * np.log(1 / denominator)
-#     return result
-# =============================================================================
-
 def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, tauv, vth):
     bMeanSS = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (
         c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
     return tauv * np.log(1 / (1 - vth / (f * tauv * bMeanSS)))
 
 
-def get_CVT2(f, c1, c2, M1, M2, k1, k2, p1, p2, cp, Hp, pmin, tauv, vth):
+# =============================================================================
+# def get_CVT2(f, c1, c2, M1, M2, k1, k2, p1, p2, cp, Hp, pmin, tauv, vth):
+#     
+#     bMeanSS = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (
+#         c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
+# 
+#     bSquaredMeanSS = -((c1**2 * k1 * M1 * (-1 + p1) * p1) / (k1 + f * p1)) - \
+#          ((c2**2 * k2 * M2 * (-1 + p2) * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2)) + \
+#          ((c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2))**2
+# 
+#     CVT2 = -((vth * (vth - 2 * f * tauv * bMeanSS) * bSquaredMeanSS) / (
+#         2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2))
+#     return CVT2
+# =============================================================================
+
+def get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, cp, Hp, pmin, vth, tauv):
+    # Intermediate calculations
+    pi = ((cp * f)**Hp + pmin) / (1 + (cp * f)**Hp)
     
-    bMeanSS = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (
-        c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
-
-    bSquaredMeanSS = -((c1**2 * k1 * M1 * (-1 + p1) * p1) / (k1 + f * p1)) - \
-         ((c2**2 * k2 * M2 * (-1 + p2) * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2)) + \
-         ((c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2))**2
-
-    CVT2 = -((vth * (vth - 2 * f * tauv * bMeanSS) * bSquaredMeanSS) / (
-        2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2))
-    return CVT2
-
-
-
+    b1MeanSS = p1 * k1 * M1 / (f * p1 + k1)
+    b2MeanSS = p2 * k2 * M2 / (f * p2 + k2)
+    
+    bMeanSS = c1 * p1 * k1 * M1 / (f * p1 + k1) - c2 * p2 * k2 * M2 / (f * p2 + k2) * pi
+    
+    bVarianceSS = c1**2 * (1 - p1) * b1MeanSS + c2**2 * pi * (1 - p2) * b2MeanSS
+    
+    bSquaredMeanSS = bVarianceSS + bMeanSS**2
+    
+    # Main expression
+    numerator = vth * (-2 * f * tauv * vth * bMeanSS**2 + (-1 + 2 * f * tauv) * vth * bSquaredMeanSS + 2 * f * tauv * bMeanSS * bSquaredMeanSS)
+    denominator = 2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2
+    result = numerator / denominator
+    
+    return result
 
 def get_equations(f, params):
     
@@ -202,7 +213,7 @@ def get_equations(f, params):
 
     T_mean = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, cp, Hp, pmin, tauv, vth)
 
-    CVT2 = get_CVT2(f, c1, c2, M1, M2, k1, k2, p1, p2, cp, Hp, pmin, tauv, vth)
+    CVT2 = get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, cp, Hp, pmin, vth, tauv)
 
     return T_mean, CVT2
 
@@ -218,9 +229,9 @@ def get_equations(f, params):
 # Values of c to test
 f_max = 100
 f_vals = np.arange(1,f_max+1)
+f_vals = np.linspace(0.001, 100, 100)
 
-
-run_time = 30
+run_time = 60*10
 
 p1 = 0.195
 p2 = 0.2
@@ -235,8 +246,12 @@ k1 = 100
 k2 = 100
 
 tauv = 1
-
 vth = 0.2
+
+cp = 0.01 #0.01
+Hp = 2 #1.1, #1.5
+pmin = 0.2
+
 delta_t = 0.01
 
 # Simulations
@@ -245,12 +260,11 @@ CVT2_sim = []
 
 fmax = 100
 f_vals = np.arange(1, fmax+1)
+f_vals = np.linspace(0.001, 100, 100)
 
 ninit = 1
 
-cp = 0.01
-Hp = 1.1
-pmin = 0.2
+
 
 
 # Simulations
@@ -285,11 +299,33 @@ for i in iter_range:
 
 f_actual = [f for f in iter_range]
 
+F_sim = 1/np.array(mean_T_sim)
+F_eq = 1/np.array(mean_T_eq)
+
+
+
+fontsize = 20
 fig, ax = plt.subplots(1,2)
-ax[0].plot(f_actual, 1/np.array(mean_T_sim), label = '1/<T> Simulations')
-ax[0].plot(f_actual, 1/np.array(mean_T_eq), label = '1/<T> Equation')
-ax[1].plot(f_actual, CVT2_sim, label = 'CVT2 Simulations')
-ax[1].plot(f_actual, CVT2_eq, label = 'CVT2 Equation')
-ax[0].legend()
-ax[1].legend()
+ax[0].plot(f_actual, F_sim)
+ax[0].plot(f_actual, F_eq)
+ax[1].plot(f_actual, CVT2_sim, label = 'simulations')
+ax[1].plot(f_actual, CVT2_eq, label = 'equation')
+ax[1].legend(loc = 'upper left', fontsize = fontsize-5)
+ax[0].set_xlim([0,100])
+ax[1].set_xlim([0,100])
+
+ax[0].set_xlabel('\t\t\t\t\t\texcitatory firing frequency, $f_e$ $(Hz)$', fontsize = fontsize)
+ax[0].set_ylabel(r'mean output frequency, $\langle F \rangle$ $(Hz)$', fontsize = fontsize)
+ax[1].set_ylabel(r'noise, $CV^2_T$', fontsize = fontsize)
+ax[0].tick_params(axis = 'both', labelsize = fontsize)
+ax[1].tick_params(axis = 'both', labelsize = fontsize)
+
+plt.subplots_adjust(
+top=0.95,
+bottom=0.15,
+left=0.075,
+right=0.96,
+hspace=0.2,
+wspace=0.24)
+
 plt.show()
