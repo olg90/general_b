@@ -157,15 +157,10 @@ CVT2 = n2n(CVT2)
 
 fig, ax = plt.subplots()
 fontsize = 18
-contour_levels = 10  # Adjust levels as needed
 # Contourf plot
-im = ax.contourf(F1, F2, 1 / Tmean, cmap='viridis', levels = contour_levels)
+im = ax.imshow(1 / Tmean, cmap='viridis')
 
-# Add contours
-
-contour = ax.contour(F1, F2, 1 / Tmean, levels=contour_levels, colors='black', linewidths=1)
-
-cbar = plt.colorbar(im, label="output frequency, $(Hz)$")
+cbar = plt.colorbar(im, label="mean output frequency, $(Hz)$")
 cbar.ax.tick_params(labelsize=fontsize)
 cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation=-90, labelpad=30)
 
