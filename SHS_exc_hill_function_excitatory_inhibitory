@@ -267,7 +267,7 @@ def get_equations(params):
 # Test 1
 
 # Values of c to test
-run_time = 15
+run_time = 60
 
 M1 = 50
 M2 = 200
@@ -335,7 +335,7 @@ CVT2_eq = get_CVT2(F1, F2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M
 def convert_negatives_to_nan(array):
     # Create a copy of the original array to avoid modifying it in-place
     result_array = array.copy()
-    
+
     # Replace negative values with NaN
     result_array[result_array < 0] = np.nan
     
@@ -351,8 +351,13 @@ if ignore_negatives == True:
 
 fig, ax = plt.subplots(2,2)
 
-vmaxm = np.max([np.max([x for x in (1/mean_T_eq).flatten() if np.isnan(x) == False]), np.max([x for x in (1/mean_T_sim.flatten()) if np.isnan(x) == False])])
-vmaxc= np.max([np.max([x for x in CVT2_eq.flatten() if np.isnan(x) == False]), np.max([x for x in CVT2_sim.flatten() if np.isnan(x) == False])])
+mef = (1/mean_T_eq).flatten()
+msf = (1/mean_T_sim.flatten())
+cef = CVT2_eq.flatten()
+csf = CVT2_sim.flatten()
+
+vmaxm = np.max([np.max([x for x in mef if np.isnan(x) == False]), np.max([x for x in msf if np.isnan(x) == False])])
+vmaxc= np.max([np.max([x for x in cef if np.isnan(x) == False]), np.max([x for x in csf if np.isnan(x) == False])])
 
 im1 = ax[0,0].imshow(1/mean_T_eq, cmap='viridis', vmin =  0, vmax = vmaxm)
 plt.colorbar(im1, label='1/<T_eq>')
@@ -365,6 +370,16 @@ plt.colorbar(im3, label='CVT2_eq')
 
 im4 = ax[1,1].imshow(CVT2_sim.T, cmap='viridis', vmin = 0, vmax = vmaxc)
 plt.colorbar(im4, label='CVT2_sim')
+
+# =============================================================================
+# minval = 10
+# im3 = ax[1,0].imshow(CVT2_eq*(CVT2_eq < minval), cmap='viridis')
+# plt.colorbar(im3, label='CVT2_eq')
+# 
+# im4 = ax[1,1].imshow(CVT2_sim.T*(CVT2_sim.T < minval), cmap='viridis')
+# plt.colorbar(im4, label='CVT2_sim')
+# =============================================================================
+
 
 plt.tight_layout()
 
