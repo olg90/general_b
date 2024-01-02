@@ -28,7 +28,7 @@ def get_arg_type(i):
         return 'nd'
     if i == 3:
         return 'measure'
-    
+
 def to_dict(**x):
     return x
 
