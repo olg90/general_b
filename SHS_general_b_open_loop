@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_time_to(text, f, ku, Mu, nu, kd, Md, nd):
+def get_time_to(text, f, ku, Mu, nu):
     
     if text == 'f':
         return np.random.exponential(1./f)
@@ -12,11 +12,6 @@ def get_time_to(text, f, ku, Mu, nu, kd, Md, nd):
         else:
             return np.inf
         
-    if text == 'nd':
-        if Md > nd:
-            return np.random.exponential(1./(kd*(Md-nd)))
-        else:
-            return np.inf
 
 def get_arg_type(i):
     
@@ -25,8 +20,6 @@ def get_arg_type(i):
     if i == 1:
         return 'nu'
     if i == 2:
-        return 'nd'
-    if i == 3:
         return 'measure'
 
 def to_dict(**x):
@@ -42,12 +35,6 @@ def run_test(args):
     pu = args['pu']
     cu = args['cu']
     
-
-    kd = args['kd']
-    Md = args['Md']
-    pd = args['pd']
-    cd = args['cd']
-    
     tauv = args['tauv']
     vth = args['vth']
 
@@ -57,7 +44,6 @@ def run_test(args):
     v_membrane = 0
     
     nu = 0
-    nd = 0
     
     v_history = [[0, current_time]] # data array
     AP_times = []
@@ -68,11 +54,10 @@ def run_test(args):
     
     while current_time < run_time:
         
-        time_to_f = get_time_to('f', f, ku, Mu, nu, kd, Md, nd) # next reaction time
-        time_to_nu = get_time_to('nu', f, ku, Mu, nu, kd, Md, nd)
-        time_to_nd = get_time_to('nd', f, ku, Mu, nu, kd, Md, nd)
+        time_to_f = get_time_to('f', f, ku, Mu, nu) # next reaction time
+        time_to_nu = get_time_to('nu', f, ku, Mu, nu)
             
-        times_array = np.array([time_to_f, time_to_nu, time_to_nd, t_measure])
+        times_array = np.array([time_to_f, time_to_nu, t_measure])
     
         t_min_arg = np.argmin(times_array)
         arg_type = get_arg_type(t_min_arg)
@@ -91,9 +76,7 @@ def run_test(args):
             
             if v_membrane >= vth:
                 
-                b_d = np.random.binomial(nd, pd)
-                v_membrane = -cd*b_d
-                nd -= b_d
+                v_membrane = 0
                 AP_times.append(current_time)
 
             current_time += t_min
@@ -106,14 +89,6 @@ def run_test(args):
             
             current_time += t_min
             t_measure -= t_min
-            
-        elif arg_type == 'nd':
-            
-            if nd < Md:
-                nd += 1
-    
-            current_time += t_min
-            t_measure = t_min
             
         else:
             v_membrane = v_membrane*np.exp(-t_min/tauv)
@@ -192,17 +167,17 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-f_max = 100
+f_max = 500
 f_vals = np.arange(1,f_max+1)
 
-run_time = 60
+run_time = 15
 
 M = 100
 pr = 0.3
 c = 0.001
 k = 5
-tauv = 1
-vth = 0.2
+tauv = 10
+vth = 0.07
 
 delta_t = 0.01
 
@@ -210,11 +185,6 @@ Md = 1
 pd = 0
 cd = 0
 kd = 1
-
-#
-checkf = k*vth/(pr*(c*M*k*tauv-vth))
-ninit = int(np.ceil(checkf))
-#
 
 # Simulations
 mean_T_sim = []
@@ -245,17 +215,19 @@ for i in iter_range:
     
 f_actual = [f for f in iter_range]
 
-
+#%%
 fig, ax = plt.subplots(1,2)
-ax[0].plot(f_actual, mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_actual, mean_T_eq, label = '<T> Equation')
-ax[0].set_xlabel('Action potential frequency, (Hz)')
-ax[0].set_ylabel('$\\langle T \\rangle$')
+ax[0].plot(f_actual, 1/np.array(mean_T_sim), label = r'$\langle F \rangle$ Simulations')
+ax[0].plot(f_actual, 1/np.array(mean_T_eq), label = r'$\langle F \rangle$ Equation')
+ax[0].set_xlabel('presynaptic action potential frequency f, (Hz)')
+ax[0].set_ylabel('postsynaptic action\n potential freuqnecy $\\langle F \\rangle$, $Hz$')
 ax[1].plot(f_actual, CVT2_sim, label = 'CVT2 Simulations')
 ax[1].plot(f_actual, CVT2_eq, label = 'CVT2 Equation')
 ax[1].set_ylabel('$CV_{T}^2$')
 ax[0].legend()
 ax[1].legend()
+ax[0].set_xscale('log')
+ax[1].set_xscale('log')
 
 plt.tight_layout()
 plt.show()
