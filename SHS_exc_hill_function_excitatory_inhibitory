@@ -396,6 +396,7 @@ vmaxval = np.max([np.max([x for x in 1/mean_T_eq.flatten() if np.isnan(x) == Fal
 
 im0 = ax[0].imshow(1/mean_T_eq, cmap=color, origin ='lower', vmin = 0, vmax = vmaxval)
 im1 = ax[1].imshow(1/mean_T_sim.T, cmap=color, origin = 'lower', vmin = 0, vmax = vmaxval)
+
 ax[1].set_yticks([])
 ax[0].set_xlabel(r'                                                  excitatory frequency, $f_e$ $(Hz)$', fontsize = fontsize)
 ax[0].set_ylabel(r'inhibitory frequency, $f_i$ $(Hz)$', fontsize = fontsize)
