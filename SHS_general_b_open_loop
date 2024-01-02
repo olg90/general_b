@@ -41,6 +41,7 @@ def run_test(args):
     Mu = args['Mu']
     pu = args['pu']
     cu = args['cu']
+    
 
     kd = args['kd']
     Md = args['Md']
@@ -139,17 +140,31 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
+# =============================================================================
+# def get_T_mean(k, f, pr, c, M, tauv, vth):
+#     return tauv * np.log(1 / (1 - ((k + f * pr) * vth) / (c * f * k * M * pr * tauv)))
+#
+# def get_CVT2(k, f, pr, c, M, tauv, vth):
+#     numerator = -((k + f * pr) * (-1 + k * (-1 + pr) + f * (-1 + pr) * pr) * vth * (2 * c * f * k * M * pr * tauv - (k + f * pr) * vth))
+#     denominator = 2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log((c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
+# 
+#     result = numerator / denominator
+#     return result    
+# =============================================================================
+
+
 def get_T_mean(k, f, pr, c, M, tauv, vth):
-    return tauv * np.log(1 / (1 - ((k + f * pr) * vth) / (c * f * k * M * pr * tauv)))
+    b_mean = c * pr * k * M / (f * pr + k)
+    return tauv * np.log(1 / (1 - vth / (f * tauv * b_mean)))
 
 def get_CVT2(k, f, pr, c, M, tauv, vth):
-    return -(((k + f * pr) * vth * (2 * c * f * k * M * pr * (-1 + k * (-1 + pr) + 
-              f * (-1 + pr) * pr) * tauv + (k + 
-              f * pr) * ((-1 + f * (-1 + pr) * pr) * (-1 + 2 * f * tauv) + 
-              k * (1 - pr + 
-                 2 * f * (-1 + pr + 
-                    M * pr) * tauv)) * vth))/(2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log((c * f * k * M * pr * tauv)/(c * f * k * M * pr * tauv - (k + f * pr) * vth))**2))
-    
+    b_mean = c * pr * k * M / (f * pr + k)
+    b_squared_mean = c**2 * (pr * (1 - pr) * k * M / (f * pr + k) + (pr * k * M / (f * pr + k)**2))
+
+    numerator = -vth * (vth - 2 * f * tauv * b_mean) * b_squared_mean
+    denominator = 2 * f * tauv * b_mean**2 * (vth - f * tauv * b_mean)**2 * np.log(1 + vth / (-vth + f * tauv * b_mean))**2
+
+    return numerator / denominator                
 
 def get_equations(f, params):
     
@@ -164,11 +179,8 @@ def get_equations(f, params):
     T_mean = get_T_mean(k, f, pr, c, M, tauv, vth)
     CVT2 = get_CVT2(k, f, pr, c, M, tauv, vth)
 
-    CVT2 = -(((k + f * pr) * (-1 + k * (-1 + pr) + f * (-1 + pr) * pr) * vth * (2 * c * f * k * M * pr * tauv - (k + f * pr) * vth)) / (
-        2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log(
-            (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2))
-
     return T_mean, CVT2
+
 
 
 
