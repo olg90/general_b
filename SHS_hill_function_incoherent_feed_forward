@@ -303,8 +303,6 @@ f_actual = [f for f in iter_range]
 F_sim = 1/np.array(mean_T_sim)
 F_eq = 1/np.array(mean_T_eq)
 
-
-
 fontsize = 20
 fig, ax = plt.subplots(1,2)
 ax[0].plot(f_actual, F_sim)
