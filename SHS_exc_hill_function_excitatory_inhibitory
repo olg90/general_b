@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_time_to(text, args, n1, n2):
+def get_time_to(text, args, n1, n2, k1, k2):
     
     if text == 'f1':
         return np.random.exponential(1./args['f1'])
@@ -11,7 +11,6 @@ def get_time_to(text, args, n1, n2):
     
     if text == 'n1':
         M1 = args['M1']
-        k1 = args['k1']
         
         if M1 > n1:
             return np.random.exponential(1./(k1*(M1-n1)))
@@ -20,7 +19,6 @@ def get_time_to(text, args, n1, n2):
         
     if text == 'n2':
         M2 = args['M2']
-        k2 = args['k2']
         if M2 > n2:
             return np.random.exponential(1./(k2*(M2-n2)))
         else:
@@ -44,9 +42,10 @@ def to_dict(**x):
 
 def run_test(args):
     
-    
-
     run_time = args['run_time']
+    
+    f1 = args['f1']
+    f2 = args['f2']
     
     M1 = args['M1']
     M2 = args['M2']
@@ -54,19 +53,20 @@ def run_test(args):
     c1 = args['c1']
     c2 = args['c2']
     
-    p1s = args['p1s']
-    p1e = args['p1e']
+    k1s = args['k1s']
+    k1e = args['k1e']
     
-    p2s = args['p2s']
-    p2e = args['p2e']
+    k2s = args['k2s']
+    k2e = args['k2e']
     
-    cp1 = args['cp1']
-    cp2 = args['cp2']
-    Hp1 = args['Hp1']
-    Hp2 = args['Hp2']
+    ck1 = args['ck1']
+    ck2 = args['ck2']
     
-    p1 = (p1e * (cp1 * f1) ** Hp1 + p1s) / (1 + (cp1 * f1) ** Hp1)
-    p2 = (p2e * (cp2 * f2) ** Hp2 + p2s) / (1 + (cp2 * f2) ** Hp2)
+    Hk1 = args['Hk1']
+    Hk2 = args['Hk2']
+    
+    k1 = (k1e * (ck1 * f1) ** Hk1 + k1s) / (1 + (ck1 * f1) ** Hk1)
+    k2 = (k2e * (ck2 * f2) ** Hk2 + k2s) / (1 + (ck2 * f2) ** Hk2)
     
 
     tauv = args['tauv']
@@ -89,10 +89,10 @@ def run_test(args):
     
     while current_time < run_time:
         
-        time_to_f1 = get_time_to('f1', args, n1, n2) # next reaction time
-        time_to_f2 = get_time_to('f2', args, n1, n2) # next reaction time
-        time_to_n1 = get_time_to('n1', args, n1, n2)
-        time_to_n2 = get_time_to('n2', args, n1, n2)
+        time_to_f1 = get_time_to('f1', args, n1, n2, k1, k2) # next reaction time
+        time_to_f2 = get_time_to('f2', args, n1, n2, k1, k2) # next reaction time
+        time_to_n1 = get_time_to('n1', args, n1, n2, k1, k2)
+        time_to_n2 = get_time_to('n2', args, n1, n2, k1, k2)
             
         times_array = np.array([time_to_f1, time_to_f2, time_to_n1, time_to_n2, t_measure])
     
@@ -191,18 +191,18 @@ def run_test(args):
 #     return Tmean
 # =============================================================================
 
-def get_T_mean(f1, f2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e):
-    p1 = (p1e * (cp1 * f1) ** Hp1 + p1s) / (1 + (cp1 * f1) ** Hp1)
-    p2 = (p2e * (cp2 * f2) ** Hp2 + p2s) / (1 + (cp2 * f2) ** Hp2)
+def get_T_mean(f1, f2, c1, c2, p1, p2, k1s, k1e, k2s, k2e, M1, M2, ck1, ck2, Hk1, Hk2, vth, tauv):
+    k1 = (k1e * (ck1 * f1) ** Hk1 + k1s) / (1 + (ck1 * f1) ** Hk1)
+    k2 = (k2e * (ck2 * f2) ** Hk2 + k2s) / (1 + (ck2 * f2) ** Hk2)
     numerator = k1 + f1 * p1
     denominator = -c2 * f2 * k2 * M2 * (k1 + f1 * p1) * p2 + c1 * f1 * k1 * M1 * p1 * (k2 + f2 * p2)
     return tauv * np.log(1 / (1 - (numerator * (k2 + f2 * p2) * vth) / (denominator * tauv)))
 
 
-def get_CVT2(f1, f2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv):
+def get_CVT2(f1, f2, c1, c2, p1, p2, k1s, k1e, k2s, k2e, M1, M2, ck1, ck2, Hk1, Hk2, vth, tauv):
     
-    p1 = (p1e * (cp1 * f1)**Hp1 + p1s) / (1 + (cp1 * f1)**Hp1)
-    p2 = (p2e * (cp2 * f2)**Hp2 + p2s) / (1 + (cp2 * f2)**Hp2)
+    k1 = (k1e * (ck1 * f1) ** Hk1 + k1s) / (1 + (ck1 * f1) ** Hk1)
+    k2 = (k2e * (ck2 * f2) ** Hk2 + k2s) / (1 + (ck2 * f2) ** Hk2)
         
     b1MeanSS = p1 * k1 * M1 / (f1 * p1 + k1)
     b2MeanSS = p2 * k2 * M2 / (f2 * p2 + k2)
@@ -216,10 +216,7 @@ def get_CVT2(f1, f2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2,
         vth - c1 * f1 * tauv * b1MeanSS + c2 * f2 * tauv * b2MeanSS
     )**2 * np.log(1 - vth / (vth - c1 * f1 * tauv * b1MeanSS + c2 * f2 * tauv * b2MeanSS))**2))
         
-
-    
     return CVT2
-
 
 def get_equations(params):
     
@@ -232,30 +229,24 @@ def get_equations(params):
     c1 = params['c1']
     c2 = params['c2']
 
-    k1 = params['k1']
-    k2 = params['k2']
+    k1s = params['k1s']
+    k1e = params['k1e']
 
-    p1s = params['p1s']
-    p2s = params['p2s']
+    k2s = params['k2s']
+    k2e = params['k2e']
 
-    p1e = params['Hp1']
-    p2e = params['Hp2']
+    ck1 = params['ck1']
+    ck2 = params['ck2']
 
-    cp1 = params['cp1']
-    cp2 = params['cp2']
-
-    Hp1 = params['Hp1']
-    Hp2 = params['Hp2']
+    Hk1 = params['Hk1']
+    Hk2 = params['Hk2']
 
     vth = params['vth']
     tauv = params['tauv']
-
-    tauv = params['tauv']
-    vth = params['vth']
     
-    T_mean = get_T_mean(f1, f2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e)
+    T_mean = get_T_mean(f1, f2, c1, c2, p1, p2, k1s, k1e, k2s, k2e, M1, M2, ck1, ck2, Hk1, Hk2, vth, tauv)
     
-    CVT2 = get_CVT2(p1e, cp1, f1, Hp1, p1s, k1, p2e, cp2, f2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
+    CVT2 = get_CVT2(f1, f2, c1, c2, p1, p2, k1s, k1e, k2s, k2e, M1, M2, ck1, ck2, Hk1, Hk2, vth, tauv)
 
     return T_mean, CVT2
 
@@ -278,17 +269,20 @@ c2 = 0.001
 k1 = 100
 k2 = 100
 
-p1s = 0.2
-p1e = 0
+p1 = 0.3
+p2 = 0.3
 
-p2s = 0.2
-p2e = 0
+k1s = 100
+k1e = 0
 
-cp1 = 0.02
-cp2 = 0.03
+k2s = 100
+k2e = 0
 
-Hp1 = 8
-Hp2 = 20
+ck1 = 0.02
+ck2 = 0.03
+
+Hk1 = 8
+Hk2 = 20
 
 tauv = 0.5
 vth = 0.2
@@ -311,9 +305,10 @@ for j1, i1 in enumerate(iter_range):
         f2 = f_vals[i2]
         
         params = to_dict(run_time = run_time, f1 = f1, f2 = f2, M1 = M1, M2 = M2,
-                         c1 = c1, c2 = c2, k1 = k1, p1s = p1s, p1e = p1e, p2s = p2s, p2e = p2e,
-                         cp1 = cp1, cp2 = cp2, Hp1 = Hp1, Hp2 = Hp2,
-                         k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)
+                         c1 = c1, c2 = c2, k1 = k1, p1 = p1, p2 = p2,
+                         k1s = k1s, k1e = k1e, k2s = k2s, k2e = k2e,
+                         ck1 = ck1, ck2 = ck2, Hk1 = Hk1, Hk2 = Hk2,
+                         tauv = tauv, vth = vth, delta_t = delta_t)
         print(j1/len(iter_range))
     
         result = run_test(params)
@@ -329,8 +324,8 @@ print('Equations')
 
 
 F1, F2 = np.meshgrid(iter_range, iter_range)
-mean_T_eq = get_T_mean(F1, F2, c1, c2, k1, k2, M1, M2, cp1, cp2, Hp1, Hp2, p1s, p1e, p2s, p2e)
-CVT2_eq = get_CVT2(F1, F2, p1e, cp1, Hp1, p1s, k1, p2e, cp2, Hp2, p2s, k2, c1, M1, c2, M2, vth, tauv)
+mean_T_eq = get_T_mean(F1, F2, c1, c2, p1, p2, k1s, k1e, k2s, k2e, M1, M2, ck1, ck2, Hk1, Hk2, vth, tauv)
+CVT2_eq = get_CVT2(F1, F2, c1, c2, p1, p2, k1s, k1e, k2s, k2e, M1, M2, ck1, ck2, Hk1, Hk2, vth, tauv)
 
 def convert_negatives_to_nan(array):
     # Create a copy of the original array to avoid modifying it in-place
@@ -387,30 +382,80 @@ plt.show()
 
 #%%
 
-shrinkval = 0.5
+# =============================================================================
+# shrinkval = 0.5
+# fontsize = 20
+# color = 'viridis'
+# fig, ax = plt.subplots(1,2)
+# 
+# vmaxval = np.max([np.max([x for x in 1/mean_T_eq.flatten() if np.isnan(x) == False]), np.max([x for x in 1/mean_T_sim.flatten() if np.isnan(x) == False])])
+# 
+# im0 = ax[0].imshow(1/mean_T_eq, cmap=color, origin ='lower', vmin = 0, vmax = vmaxval)
+# im1 = ax[1].imshow(1/mean_T_sim.T, cmap=color, origin = 'lower', vmin = 0, vmax = vmaxval)
+# 
+# ax[1].set_yticks([])
+# ax[0].set_xlabel(r'                                                  excitatory frequency $f_e$, $(Hz)$', fontsize = fontsize)
+# ax[0].set_ylabel(r'inhibitory frequency $f_i$, $Hz$', fontsize = fontsize)
+# ax[0].tick_params(axis='both', labelsize = fontsize)
+# ax[1].tick_params(axis='both', labelsize = fontsize)
+# 
+# ax[0].set_title('equation', fontsize = fontsize)
+# ax[1].set_title('simulations', fontsize = fontsize)
+# 
+# cax = fig.add_axes([0.875, 0.2, 0.02, 0.7])  # Adjust these values to position the colorbar
+# cbar = fig.colorbar(im1, cax=cax, label = r'output frequency $\langle F \rangle$, $Hz$')
+# cbar.ax.tick_params(labelsize=fontsize)
+# cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation=-90, labelpad= 30)
+# plt.subplots_adjust(top=0.928, bottom=0.155, left=0.084, right=0.875, hspace=0.2, wspace=0.0)
+# 
+# 
+# plt.show()
+# 
+
+shrinkval = 0
 fontsize = 20
 color = 'viridis'
-fig, ax = plt.subplots(1,2)
+fig, ax = plt.subplots(2,1)
 
 vmaxval = np.max([np.max([x for x in 1/mean_T_eq.flatten() if np.isnan(x) == False]), np.max([x for x in 1/mean_T_sim.flatten() if np.isnan(x) == False])])
 
 im0 = ax[0].imshow(1/mean_T_eq, cmap=color, origin ='lower', vmin = 0, vmax = vmaxval)
 im1 = ax[1].imshow(1/mean_T_sim.T, cmap=color, origin = 'lower', vmin = 0, vmax = vmaxval)
 
-ax[1].set_yticks([])
-ax[0].set_xlabel(r'                                                  excitatory frequency, $f_e$ $(Hz)$', fontsize = fontsize)
-ax[0].set_ylabel(r'inhibitory frequency, $f_i$ $(Hz)$', fontsize = fontsize)
+
+ax[1].set_xlabel(r'excitatory frequency $f_e$, $(Hz)$', fontsize = fontsize)
+ax[0].set_xticks([])
+ax[1].set_ylabel(r'                                    inhibitory frequency $f_i$, $Hz$', fontsize = fontsize)
 ax[0].tick_params(axis='both', labelsize = fontsize)
 ax[1].tick_params(axis='both', labelsize = fontsize)
 
-ax[0].set_title('equation', fontsize = fontsize)
-ax[1].set_title('simulations', fontsize = fontsize)
+ax[0].text(1.05, 0.5, 'equation', transform=ax[0].transAxes, rotation=-90, va='center', ha='left', fontsize=fontsize)
+ax[1].text(1.05, 0.5, 'simulations', transform=ax[1].transAxes, rotation=-90, va='center', ha='left', fontsize=fontsize)
 
-cax = fig.add_axes([0.875, 0.2, 0.02, 0.7])  # Adjust these values to position the colorbar
-cbar = fig.colorbar(im1, cax=cax, label = r'output frequency,$\langle F \rangle$ $(Hz)$')
+cax = fig.add_axes([0.80, 0.2, 0.02, 0.7])  # Adjust these values to position the colorbar
+cbar = fig.colorbar(im1, cax=cax, label = r'output frequency $\langle F \rangle$, $Hz$')
 cbar.ax.tick_params(labelsize=fontsize)
 cbar.ax.set_ylabel(cbar.ax.get_ylabel(), fontsize=fontsize, rotation=-90, labelpad= 30)
-plt.subplots_adjust(top=0.928, bottom=0.155, left=0.084, right=0.875, hspace=0.2, wspace=0.0)
-
-
+plt.subplots_adjust(top=0.928,
+    bottom=0.155,
+    left=0.029,
+    right=0.875,
+    hspace=0.2,
+    wspace=0.0)
 plt.show()
+
+# =============================================================================
+# cax = fig.add_axes([0.20, 0.95, 0.60, 0.02])  # Adjust these values to position the colorbar above the plot
+# cbar = fig.colorbar(im0, cax=cax, orientation='horizontal', label=r'output frequency $\langle F \rangle$, $Hz$')
+# cbar.ax.tick_params(labelsize=fontsize)
+# cbar.ax.set_xlabel(cbar.ax.get_xlabel(), fontsize=fontsize, labelpad=10)
+# 
+# # Add text label above the colorbar
+# fig.text(0.85, 0.98, 'Colorbar Label', fontsize=fontsize, ha='center')
+# 
+# # Adjust the top parameter to make space for the colorbar above the plot
+# plt.subplots_adjust(top=0.88, bottom=0.155, left=0.029, right=0.875, hspace=0.2, wspace=0.0)
+# 
+# plt.show()
+# =============================================================================
+# =============================================================================
