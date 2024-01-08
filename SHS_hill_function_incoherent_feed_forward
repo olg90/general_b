@@ -231,11 +231,11 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-f_max = 100
+f_max = 200
 f_vals = np.arange(1,f_max+1)
 f_vals = np.linspace(0.001, 100, 100)
 
-run_time = 15
+run_time = 60*10
 
 p1 = 0.195
 p2 = 0.2
@@ -303,28 +303,45 @@ f_actual = [f for f in iter_range]
 F_sim = 1/np.array(mean_T_sim)
 F_eq = 1/np.array(mean_T_eq)
 
+# =============================================================================
+# fontsize = 20
+# fig, ax = plt.subplots(1,2)
+# ax[0].plot(f_actual, F_sim)
+# ax[0].plot(f_actual, F_eq)
+# ax[1].plot(f_actual, CVT2_sim, label = 'simulations')
+# ax[1].plot(f_actual, CVT2_eq, label = 'equation')
+# ax[1].legend(loc = 'upper left', fontsize = fontsize-5)
+# ax[0].set_xlim([0,100])
+# ax[1].set_xlim([0,100])
+# 
+# ax[0].set_xlabel('\t\t\t\t\t\texcitatory firing frequency, $f_e$ $(Hz)$', fontsize = fontsize)
+# ax[0].set_ylabel(r'mean output frequency, $\langle F \rangle$ $(Hz)$', fontsize = fontsize)
+# ax[1].set_ylabel(r'noise, $CV^2_T$', fontsize = fontsize)
+# ax[0].tick_params(axis = 'both', labelsize = fontsize)
+# ax[1].tick_params(axis = 'both', labelsize = fontsize)
+# 
+# plt.subplots_adjust(
+# top=0.95,
+# bottom=0.15,
+# left=0.075,
+# right=0.96,
+# hspace=0.2,
+# wspace=0.24)
+# 
+# plt.show()
+# =============================================================================
+
+#%%
 fontsize = 20
-fig, ax = plt.subplots(1,2)
-ax[0].plot(f_actual, F_sim)
-ax[0].plot(f_actual, F_eq)
-ax[1].plot(f_actual, CVT2_sim, label = 'simulations')
-ax[1].plot(f_actual, CVT2_eq, label = 'equation')
-ax[1].legend(loc = 'upper left', fontsize = fontsize-5)
-ax[0].set_xlim([0,100])
-ax[1].set_xlim([0,100])
+plt.plot(f_actual, F_eq, color = 'r', alpha = 0.6, label = 'equation', linewidth = 2)
+plt.plot(f_actual, F_sim, color = 'b', linestyle = '--', label = 'simulations', linewidth = 2)
 
-ax[0].set_xlabel('\t\t\t\t\t\texcitatory firing frequency, $f_e$ $(Hz)$', fontsize = fontsize)
-ax[0].set_ylabel(r'mean output frequency, $\langle F \rangle$ $(Hz)$', fontsize = fontsize)
-ax[1].set_ylabel(r'noise, $CV^2_T$', fontsize = fontsize)
-ax[0].tick_params(axis = 'both', labelsize = fontsize)
-ax[1].tick_params(axis = 'both', labelsize = fontsize)
-
-plt.subplots_adjust(
-top=0.95,
-bottom=0.15,
-left=0.075,
-right=0.96,
-hspace=0.2,
-wspace=0.24)
-
+plt.xlim([0,100])
+plt.xlabel('excitatory firing frequency, $f_e$ $(Hz)$', fontsize = fontsize)
+plt.ylabel(r'mean output frequency, $\langle F \rangle$ $(Hz)$', fontsize = fontsize)
+plt.tick_params(axis = 'both', labelsize = fontsize)
+plt.grid(True, linestyle = '--', alpha = 0.2)
+plt.legend(loc = 'upper right', fontsize = fontsize-5)
+plt.ylim([0,10])
+plt.tight_layout()
 plt.show()
