@@ -1,0 +1,329 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def get_time_to(text, args, n1, n2):
+    
+    if text == 'f':
+        return np.random.exponential(1./args['f'])
+    
+    if text == 'n1':
+        M1 = args['M1']
+        k1 = args['k1']
+        
+        if M1 > n1:
+            return np.random.exponential(1./(k1*(M1-n1)))
+        else:
+            return np.inf
+        
+    if text == 'n2':
+        M2 = args['M2']
+        k2 = args['k2']
+        if M2 > n2:
+            return np.random.exponential(1./(k2*(M2-n2)))
+        else:
+            return np.inf
+        
+def get_arg_type(i):
+    
+    if i == 0:
+        return 'f'
+    if i == 1:
+        return 'n1'
+    if i == 2:
+        return 'n2'
+    else:
+        return 'measure'
+
+def to_dict(**x):
+    return x
+
+def run_test(args):
+
+    run_time = args['run_time']
+    
+    M1 = args['M1']
+    M2 = args['M2']
+    
+    c1 = args['c1']
+    c2 = args['c2']
+    
+    p1 = args['p1']
+    p2 = args['p2']
+    
+    tauv = args['tauv']
+    vth = args['vth']
+    
+    pe = get_pe(f, c1, k1, M1, p1, tauv, vth)
+
+    delta_t = args['delta_t']
+        
+    current_time = 0
+    v_membrane = 0
+
+    n1 = 0
+    n2 = 0
+
+    v_history = [[0, current_time]] # data array
+    AP_times = []
+
+    preneuron_firing_history = []
+    
+    t_measure = delta_t
+    
+    while current_time < run_time:
+        
+        time_to_f = get_time_to('f', args, n1, n2) # next reaction time
+        time_to_n1 = get_time_to('n1', args, n1, n2)
+        time_to_n2 = get_time_to('n2', args, n1, n2)
+
+        times_array = np.array([time_to_f, time_to_n1, time_to_n2, t_measure])
+
+        t_min_arg = np.argmin(times_array)
+        arg_type = get_arg_type(t_min_arg)
+        t_min = times_array[t_min_arg]
+
+        if arg_type == 'f':
+
+            preneuron_firing_history.append(current_time)
+
+            b1 = np.random.binomial(n1, p1) # Number released
+            b2 = np.random.binomial(n2, p2) # Number released
+            B = np.random.binomial(1, pe) # this is a Bernoulli with probability pe
+
+            voltage_addition = c1*b1 - c2*b2*B
+
+            if (b1 > 0) and (n1 >= b1):
+                n1 -= b1
+            if (b2 > 0) and (n2 >= b2):
+                n2 -= b2
+
+            v_membrane += voltage_addition
+            v_history.append([v_membrane, current_time])
+            
+            if v_membrane >= vth:
+                v_membrane = 0
+                AP_times.append(current_time)
+
+            current_time += t_min
+            t_measure -= t_min
+
+        elif arg_type == 'n1':
+            
+            if n1 < M1:
+                n1 += 1
+            
+            current_time += t_min
+            t_measure -= t_min
+            
+        elif arg_type == 'n2':
+            
+            if n2 < M2:
+                n2 += 1            
+            
+            current_time += t_min
+            t_measure -= t_min
+            
+
+        else:
+            v_membrane = v_membrane*np.exp(-t_min/tauv)
+            
+            v_history.append([v_membrane, current_time])
+    
+            current_time += t_min
+            t_measure = delta_t
+            
+    v_history = np.array(v_history) # data array
+    AP_times = np.array(AP_times)
+    
+    inter_AP_times = np.diff(AP_times)
+    if len(inter_AP_times) < 2:
+        mean_inter_AP_time = np.nan
+        CVT2 = np.nan
+    else:
+        mean_inter_AP_time = np.mean(inter_AP_times)
+        CVT2 = np.var(inter_AP_times) / mean_inter_AP_time**2
+    
+    return {'v_history': np.array(v_history),
+            'AP_times':np.array(AP_times),
+            'inter_AP_times':np.array(inter_AP_times),
+            'mean_T':mean_inter_AP_time, 
+            'CVT2':CVT2}
+
+def get_pe(f, ce, ke, Me, pe, tauv, vth):
+
+    TMeanOL = tauv * np.log(1 / (1 - ((ke + f * pe) * vth) / (ce * f * ke * Me * pe * tauv)))
+    p = 1 / (f * TMeanOL)
+    
+    return p
+
+
+def get_T_mean(f, ce, ci, ke, ki, Me, Mi, pe, pi, tauv, vth):
+    TMeanOL = tauv * np.log(1 / (1 - ((ke + f * pe) * vth) / (ce * f * ke * Me * pe * tauv)))
+    p = 1 / (f * TMeanOL)
+
+    ne = ke * Me / (f * pe + ke)
+    ni = ki * Mi / (f * pi + ki)
+
+    bMeanSS = f * ce * pe * ne - f * ci * pi * ni * p
+
+    Tmean = tauv * np.log(1 + vth / (-vth + f * tauv * bMeanSS))
+    
+    Tmean = tauv * np.log(1/(1-vth/(tauv * p * f * (ce * pe * ne - ci * pi * ni * p))))
+    
+
+    return Tmean
+
+def get_CVT2(f, ce, ci, ke, ki, Me, Mi, pe, pi, tauv, vth):
+    TMeanOL = tauv * np.log(1 / (1 - ((ke + f * pe) * vth) / (ce * f * ke * Me * pe * tauv)))
+    p = 1 / (f * TMeanOL)
+
+    ne = ke * Me / (f * pe + ke)
+    ni = ki * Mi / (f * pi + ki)
+
+    ne2 = (ke * Me * (2 * ke * Me + f * pe)) / (2 * (ke + f * pe)**2)
+    ni2 = (ki * Mi * (2 * ki * Mi + f * pi)) / (2 * (ki + f * pi)**2)
+
+    neni = (ke * ki * Me * Mi * (ke + ki + f * (pe + pi))) / ((ke + f * pe) * (ki + f * pi) * (ke + ki + f * (pe + pi - pe * pi)))
+
+    bebi = pe * pi * neni
+
+
+    bMeanSS = f * ce * pe * ne - f * ci * pi * ni * p
+
+    be2 = pe * (1 - pe) * ne + pe**2 * ne2
+    bi2 = pi * (1 - pi) * ni + pi**2 * ni2
+
+    CVT2 = (vth * (-ce**2 * be2 * (vth - 2 * f * tauv * bMeanSS) + 
+                          ci**2 * f**2 * p * bi2 * (-vth + 2 * f * tauv * bMeanSS) + 
+                          2 * tauv * vth * bMeanSS * (-f * bMeanSS + ce * pe * ne) + 
+                          2 * ci * (ce * bebi * (vth - 2 * f * tauv * bMeanSS) - 
+                                   pi * tauv * vth * bMeanSS * ni) * p)) / (
+                        2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2)
+
+    return CVT2
+
+
+def get_equations(f, params):
+    
+    M1 = params['M1']
+    M2 = params['M2']
+
+    p1 = params['p1']
+    p2 = params['p2']
+    
+    c1 = params['c1']
+    c2 = params['c2']
+
+    k1 = params['k1']
+    k2 = params['k2']
+
+    tauv = params['tauv']
+    vth = params['vth']
+
+    T_mean = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth)
+
+    CVT2 = get_CVT2(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth)
+
+    return T_mean, CVT2
+
+
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+# Test 1
+
+# Values of c to test
+f_max = 200
+f_vals = np.arange(1,f_max+1)
+
+
+run_time = 15
+
+p1 = 0.19
+p2 = 0.2
+
+M1 = 100
+M2 = 100
+
+c1 = 0.01
+c2 = 0.008
+
+k1 = 100
+k2 = 100
+
+tauv = 1
+vth = 0.2
+
+delta_t = 0.01
+
+# Simulations
+mean_T_sim = []
+CVT2_sim = []
+
+fmax = 100
+f_vals = np.arange(1, fmax+1)
+
+checks = [((k1 + f*p1)*vth)/(c1*f*k1*M1*p1*tauv) for f in f_vals]
+
+ninit = 1
+
+# Simulations
+iter_range = range(ninit, len(f_vals))
+for j, i in enumerate(iter_range):
+    f = f_vals[i]
+    params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
+                     p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, 
+                     k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)
+    print(j/len(iter_range))
+
+    result = run_test(params)
+
+    mean_T_sim.append(result['mean_T'])
+    CVT2_sim.append(result['CVT2'])
+
+# Equations
+mean_T_eq = []
+CVT2_eq = []
+
+for i in iter_range:
+
+    params = to_dict(run_time = run_time, f = i, M1 = M1, M2 = M2,
+                     p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1,
+                     k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
+    T_mean_eq_val, CVT2_eq_val = get_equations(f_vals[i], params)
+    mean_T_eq.append(T_mean_eq_val)
+    CVT2_eq.append(CVT2_eq_val)
+
+f_actual = [f for f in iter_range]
+
+F_sim = 1/np.array(mean_T_sim)
+F_eq = 1/np.array(mean_T_eq)
+
+fontsize = 20
+fig, ax = plt.subplots(1,2)
+ax[0].plot(f_actual, F_sim)
+ax[0].plot(f_actual, F_eq)
+ax[1].plot(f_actual, CVT2_sim, label = 'simulations')
+ax[1].plot(f_actual, CVT2_eq, label = 'equation')
+ax[1].legend(loc = 'upper left', fontsize = fontsize-5)
+ax[0].set_xlim([0,100])
+ax[1].set_xlim([0,100])
+
+ax[0].set_xlabel('\t\t\t\t\t\texcitatory firing frequency, $f_e$ $(Hz)$', fontsize = fontsize)
+ax[0].set_ylabel(r'mean output frequency, $\langle F \rangle$ $(Hz)$', fontsize = fontsize)
+ax[1].set_ylabel(r'noise, $CV^2_T$', fontsize = fontsize)
+ax[0].tick_params(axis = 'both', labelsize = fontsize)
+ax[1].tick_params(axis = 'both', labelsize = fontsize)
+
+plt.subplots_adjust(
+top=0.95,
+bottom=0.15,
+left=0.075,
+right=0.96,
+hspace=0.2,
+wspace=0.24)
+
+plt.show()
