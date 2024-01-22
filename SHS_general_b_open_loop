@@ -251,8 +251,8 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-f_max = 200
-n_samples = 100
+f_max = 500
+n_samples = 200
 f_val_list = np.linspace(0,f_max, n_samples)
 
 run_time = 15
@@ -260,7 +260,7 @@ run_time = 15
 M = 100
 pr = 0.2
 c = 0.001
-k = 100
+k = 5
 tauv = 1
 vth = 0.2
 
