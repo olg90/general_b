@@ -162,16 +162,63 @@ def get_T_mean(f, tauv, vth, c, pr, k, M):
             
     return tauv * np.log(1 / (1 - vth / (f * tauv * vatSS)))
 
-def get_CVT2(f, k, M, pr, c, vth, tauv):
-    bss = (k * M) / (k + f * pr)
-    n2ss = (k * M * (2 * k * M - f * (-2 + pr) * pr)) / ((k + f * pr) * (2 * k - f * (-2 + pr) * pr))
-    b2ss = (k * M * pr * (-f * (-2 + pr) * pr + 2 * k * (1 + (-1 + M) * pr))) / ((k + f * pr) * (2 * k - f * (-2 + pr) * pr))
-    bnss = (k * M * pr * (2 * k * M - f * (-2 + pr) * pr)) / ((k + f * pr) * (2 * k - f * (-2 + pr) * pr))
-    VAT = (c * k * M * pr) / (k + f * pr)
+def get_CVT2(f, k, M, pr, tauv, vth, c):
+    numerator = -((k + f * pr)**2 * (
+        (2 * f * k**2 * M**2 * pr**2 * tauv * vth**2) / 
+        (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
+        1 / (k + f * pr - (k + f * pr)**3 * tauv**2) * 
+        (1 / (2 * k - f * (-2 + pr) * pr) * k * M * pr * 
+         (-f * (-2 + pr) * pr + 2 * k * (1 + (-1 + M) * pr)) * 
+         ((1 - k * tauv + f * pr * tauv) * (1 + k * tauv + f * pr * tauv) - 
+          4 * f * pr * tauv * ((c * f * k * M * pr * tauv) / 
+                               (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+          (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
+           (1 + k * tauv - f * pr * tauv) * 
+           (-1 + k * tauv + f * pr * tauv)) / 
+          (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2) + 
+         2 * f * k * M * pr**2 * tauv * 
+         (((2 * k * M - f * (-2 + pr) * pr) * 
+           (-1 - (k + f * pr) * tauv + 
+            2 * ((c * f * k * M * pr * tauv) / 
+                 (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+            (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
+             (-1 + k * tauv + f * pr * tauv)) / 
+            (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2)) / 
+         (2 * k - f * (-2 + pr) * pr) + 
+         1 / (k + f * pr) * 
+         k * M * ((k + f * pr) * tauv * 
+                  (1 + k * tauv + f * pr * tauv) - 
+                  2 * ((c * f * k * M * pr * tauv) / 
+                       (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+                  (c**2 * f**2 * k**2 * M**2 * pr**2 * 
+                   (k + f * pr) * tauv**3 * 
+                   (-1 + k * tauv + f * pr * tauv)) / 
+                  (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
+                  (2 * c * f * k * M * pr * tauv * 
+                   (1 - (k + f * pr)**2 * tauv**2)) / 
+                  (c * f * k * M * pr * tauv - (k + f * pr) * vth))))))
 
-    CVT2_value = -((vth**2 - (c**2 * ((k + f * pr) * (1 + k * tauv + f * pr * tauv) * vth**2 * ((1 - k * tauv + f * pr * tauv) * b2ss + 2 * f * pr * tauv * (-bnss + k * M * tauv * bss)) - 2 * f * tauv * (1 + k * tauv + f * pr * tauv) * vth * (-(k + f * pr) * ((-1 + k * tauv - f * pr * tauv) * b2ss + 2 * f * pr * tauv * bnss) + 2 * f * k * M * pr * tauv * bss) * VAT + 4 * f**3 * pr * tauv**3 * ((k + f * pr) * (b2ss - bnss) + k * M * bss) * VAT**2)) / (2 * f * (k + f * pr) * tauv * (-1 + (k + f * pr)**2 * tauv**2) * VAT**2) + (2 * c**2 * f * pr * tauv * ((k + f * pr) * (b2ss - bnss) + k * M * bss) * (-vth + f * tauv * VAT) * (1 + vth / (-vth + f * tauv * VAT))**-((k + f * pr) * tauv)) / ((k + f * pr) * (-1 + (k + f * pr)**2 * tauv**2) * VAT))
-                   )
-    return CVT2_value
+    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * np.log(
+        (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
+
+    result = numerator / denominator
+
+    return result
+
+
+def get_T_mean_toy(k, f, M, pr, tauv, vth, c):
+    expression = tauv * np.log(1 / (1 - ((k + f * pr) * vth) / (c * f * k * M * pr * tauv)))
+    return expression
+
+    
+def get_CVT2_toy(k, f, M, pr, tauv, vth, c):
+    numerator = -((k + f * pr)**2 * ((k * M * pr) / (k + f * pr)**2 + (k * M * (1 - pr) * pr) / (k + f * pr)) * vth * (-((2 * c * f * k * M * pr * tauv) / (k + f * pr)) + vth))
+    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * (-((c * f * k * M * pr * tauv) / (k + f * pr)) + vth)**2 * np.log(1 + vth / ((c * f * k * M * pr * tauv) / (k + f * pr) - vth))**2
+
+    result = numerator / denominator
+
+    return result
+    
 
 
 def get_equations(f, params):
@@ -185,9 +232,13 @@ def get_equations(f, params):
     vth = params['vth']
     
     T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
-    CVT2 = get_CVT2(f, k, M, pr, c, vth, tauv)
+    CVT2 = get_CVT2(f, k, M, pr, tauv, vth, c)
+    
+    T_mean_toy = get_T_mean_toy(k, f, M, pr, tauv, vth, c)
+    CVT2_toy = get_CVT2_toy(k, f, M, pr, tauv, vth, c)
 
-    return T_mean, CVT2
+    return T_mean, CVT2, T_mean_toy, CVT2_toy
+
 
 
 
@@ -200,7 +251,7 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-f_max = 100
+f_max = 200
 n_samples = 100
 f_val_list = np.linspace(0,f_max, n_samples)
 
@@ -214,8 +265,6 @@ tauv = 1
 vth = 0.2
 
 delta_t = 0.01
-
-
 
 # Simulations
 mean_T_sim = []
@@ -237,21 +286,25 @@ for i, f_val in enumerate(f_val_list):
 
 mean_T_eq = []
 CVT2_eq = []
+meanTtoy = []
+cvt2toy = []
 
 for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
+    T_mean_eq_val, CVT2T_eq_val, Ttoy, Ctoy = get_equations(f_val, params)
     mean_T_eq.append(T_mean_eq_val)
     CVT2_eq.append(CVT2T_eq_val)
+    meanTtoy.append(Ttoy)
+    cvt2toy.append(Ctoy)
     
-
-
 fig, ax = plt.subplots(1,2)
 ax[0].plot(f_val_list, mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_val_list, mean_T_eq, label = '<T> Equation')
+ax[0].plot(f_val_list, mean_T_eq, label = '<T> OL model')
+ax[0].plot(f_val_list, meanTtoy, label = '<T> Toy model')
 ax[0].set_xlabel('Action potential frequency, (Hz)')
 ax[0].set_ylabel('$\\langle T \\rangle$')
 ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
-ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 Equation')
+ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
+ax[1].plot(f_val_list, cvt2toy, label = 'CVT2 Toy model')
 ax[1].set_ylabel('$CV_{T}^2$')
 ax[0].legend()
 ax[1].legend()
