@@ -272,22 +272,56 @@ for f_val in f_val_list:
     T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
     mean_T_eq.append(T_mean_eq_val)
     CVT2_eq.append(CVT2T_eq_val)
-
     pf_eq.append(1/(f_val*T_mean_eq_val))
 
-fig, ax = plt.subplots(1,3, figsize = (10,5))
-ax[0].plot(f_val_list, mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_val_list, mean_T_eq, label = '<T> OL model')
-ax[0].set_xlabel('Action potential frequency, (Hz)')
-ax[0].set_ylabel('$\\langle T \\rangle$')
-ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
-ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
-ax[1].set_ylabel('$CV_{T}^2$')
-ax[2].plot(f_val_list, pf_sim, label = 'p(f) simulations')
-ax[2].plot(f_val_list, pf_eq, label = 'p(f) equation')
+#%%
 
-ax[0].legend()
-ax[1].legend()
+# =============================================================================
+# fig, ax = plt.subplots(1,3)
+# ax[0].plot(f_val_list, mean_T_sim, label = '<T> Simulations')
+# ax[0].plot(f_val_list, mean_T_eq, label = '<T> OL model')
+# ax[0].set_xlabel('Action potential frequency, (Hz)')
+# ax[0].set_ylabel('$\\langle T \\rangle$')
+# ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
+# ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
+# ax[1].set_ylabel('$CV_{T}^2$')
+# ax[2].plot(f_val_list, pf_sim, label = 'p(f) simulations')
+# ax[2].plot(f_val_list, pf_eq, label = 'p(f) equation')
+# 
+# ax[0].legend()
+# ax[1].legend()
+# 
+# # =============================================================================
+# # plt.tight_layout()
+# # =============================================================================
+# plt.show()
+# =============================================================================
 
-plt.tight_layout()
+# =============================================================================
+# fontsize = 15
+# plt.plot(f_val_list, pf_sim, label = 'p(f) simulations')
+# plt.plot(f_val_list, pf_eq, label = 'p(f) equation')
+# plt.xlabel('presynaptic neuron input frequency, f', fontsize = fontsize)
+# plt.ylabel('probability that the\n postsynaptic neuron fires, p(f)', fontsize = fontsize)
+# plt.tick_params(axis = 'both', labelsize = fontsize)
+# plt.legend(fontsize = fontsize)
+# plt.show()
+# =============================================================================
+
+
+# Set font size for better readability
+fontsize = 15
+
+# Plotting the data
+plt.figure()  # Adjust figure size as needed
+plt.plot(f_val_list, pf_sim, label='simulated p(f)', linewidth=2, marker='.', markersize=8)
+plt.plot(f_val_list, pf_eq, label='theoretical p(f)', linestyle='-', linewidth=3)
+
+# Adding labels and title
+plt.xlabel('presynaptic neuron input frequency, $f$ (Hz)', fontsize=fontsize)
+plt.ylabel('probability of postsynaptic\n neuron firing, $p(f)$', fontsize=fontsize)
+
+plt.tick_params(axis='both', labelsize=fontsize)
+plt.legend(fontsize=fontsize)
+plt.grid(True, linestyle='--', alpha=0.7)
 plt.show()
