@@ -265,20 +265,14 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-fmin = 1
+fmin = 0
 fmax = 100
 n_samples = 100
 f_val_list = np.linspace(fmin,fmax, n_samples)
 
-run_time = 15
-#
-# =============================================================================
-# HM = 1.5; cM = 1; k = 100; M1 = 0; M0 = 1000; c = 0.01; pr = 0.2; \
-# tauv = 1; vth = 0.2;
-# M0 pr / (pr + k) > M1
-# =============================================================================
-#
+run_time = 60
 
+#Defaults, must be defined
 M = 100
 pr = 0.2
 c = 0.01
@@ -288,18 +282,59 @@ vth = 0.2
 
 # =============================================================================
 # xname = 'M'
+# pr = 0.2
+# c = 0.01
+# k = 100
+# tauv = 1.2
+# vth = 0.2
+# 
 # x0=1000
 # x1=0
 # Hx = 1.5
 # cx = 1
 # =============================================================================
 
-xname = 'k'
-x0=100
-x1=0
-Hx = 1
-cx = 0.2
+xname = 'c'
+M = 1000
+pr = 0.3
+k = 100
+tauv = 1
+vth = 0.2
 
+
+x0=0.01
+x1=0
+Hx = 1.5
+cx = 0.8
+
+
+# =============================================================================
+# xname = 'k'
+# M = 100
+# pr = 0.2
+# c = 0.01
+# tauv = 1
+# vth = 0.2
+# 
+# x0=100
+# x1=0
+# Hx = 1
+# cx = 0.2
+# =============================================================================
+
+# =============================================================================
+# xname = 'pr'
+# M = 100
+# c = 0.01
+# k = 100
+# tauv = 1
+# vth = 0.2
+# 
+# x0=0.2
+# x1=0
+# Hx = 2
+# cx = 10
+# =============================================================================
 
 delta_t = 0.01
 
@@ -335,17 +370,29 @@ CVT2_sim = np.array(CVT2_sim)
 mean_T_eq = np.array(mean_T_eq)
 CVT2_eq = np.array(CVT2_eq)
 
-fig, ax = plt.subplots(1,2)
-ax[0].plot(f_val_list, 1/mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_val_list, 1/mean_T_eq, label = '<T> OL model')
-ax[0].set_xlabel('Action potential frequency, (Hz)')
-ax[0].set_ylabel('$\\langle T \\rangle$')
-ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
-ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
-ax[1].set_ylabel('$CV_{T}^2$')
 
-ax[0].legend()
-ax[1].legend()
+fontsize = 15
+lw = 2
+fig, ax = plt.subplots(1,2)
+ax[0].plot(f_val_list, 1/mean_T_sim, label = r'$<T>$ simulations', linewidth=lw)
+ax[0].plot(f_val_list, 1/mean_T_eq, label = r'$<T>$ theoretical', linestyle = '-', linewidth = lw)
+ax[0].set_xlabel(r'                                           action potential frequency $f$, $Hz$', fontsize = fontsize)
+ax[0].set_ylabel(r'mean first passage time $\langle T \rangle$, sec', fontsize = fontsize)
+ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 simulations', linestyle = '-', linewidth=lw)
+ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 theoretical', linestyle = '-', linewidth = lw)
+ax[1].set_ylabel(r'noise $CV_{T}^2$', fontsize = fontsize)
+ax[0].tick_params(axis ='both', labelsize = fontsize)
+ax[1].tick_params(axis ='both', labelsize = fontsize)
+
+ax[0].plot([], [], ' ', label = r'${}$ as a function of $f$'.format(xname))
+ax[1].plot([], [], ' ', label = r'${}$ as a function of $f$'.format(xname))
+
+ax[0].legend(loc = 'upper right', fontsize = fontsize-5, handlelength = 0.5)
+ax[1].legend(loc = 'upper right', fontsize = fontsize-5, handlelength = 0.5)
+
+aval = 0.2
+ax[0].grid(True, alpha = aval)
+ax[1].grid(True, alpha = aval)
 
 plt.tight_layout()
 plt.show()
