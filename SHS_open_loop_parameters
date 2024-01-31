@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import bayes_mvs as bayesest
 
 def get_time_to(text, f, ku, Mu, nu):
     
@@ -270,7 +271,7 @@ fmax = 100
 n_samples = 100
 f_val_list = np.linspace(fmin,fmax, n_samples)
 
-run_time = 60
+run_time = 15
 
 #Defaults, must be defined
 M = 100
@@ -294,33 +295,33 @@ vth = 0.2
 # cx = 1
 # =============================================================================
 
-xname = 'c'
-M = 1000
-pr = 0.3
-k = 100
-tauv = 1
-vth = 0.2
-
-
-x0=0.01
-x1=0
-Hx = 1.5
-cx = 0.8
-
-
 # =============================================================================
-# xname = 'k'
-# M = 100
-# pr = 0.2
-# c = 0.01
+# xname = 'c'
+# M = 1000
+# pr = 0.3
+# k = 100
 # tauv = 1
 # vth = 0.2
 # 
-# x0=100
+# 
+# x0=0.01
 # x1=0
-# Hx = 1
-# cx = 0.2
+# Hx = 1.5
+# cx = 0.8
 # =============================================================================
+
+
+xname = 'k'
+M = 100
+pr = 0.2
+c = 0.003
+tauv = 5
+vth = 0.2
+
+x0=100
+x1=0
+Hx = 1.7
+cx = 1
 
 # =============================================================================
 # xname = 'pr'
@@ -338,40 +339,76 @@ cx = 0.8
 
 delta_t = 0.01
 
-# Simulations
-mean_T_sim = []
-CVT2_sim = []
 
-for i, f_val in enumerate(f_val_list):
-    params = to_dict(run_time = run_time, f = f_val, Mu = M,
-                     pu = pr, cu = c, ku = k,
-                     xname=xname, x0=x0, x1=x1, Hx=Hx,cx=cx,
-                     tauv = tauv, vth = vth, delta_t = delta_t)  
-    print(i/len(f_val_list))
+mTs = []
+mTe = []
+cs = []
+ce = []
 
-    result = run_test(params)
+n_times = 10
+for ntime in range(n_times):
+    print(ntime)
 
-    mean_T_sim.append(result['mean_T'])
-    CVT2_sim.append(result['CVT2'])
+    # Simulations
+    mean_T_sim = []
+    CVT2_sim = []
     
-# Equations
-
-mean_T_eq = []
-CVT2_eq = []
-pf_eq = []
-
-for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
-    mean_T_eq.append(T_mean_eq_val)
-    CVT2_eq.append(CVT2T_eq_val)
+    for i, f_val in enumerate(f_val_list):
+        params = to_dict(run_time = run_time, f = f_val, Mu = M,
+                         pu = pr, cu = c, ku = k,
+                         xname=xname, x0=x0, x1=x1, Hx=Hx,cx=cx,
+                         tauv = tauv, vth = vth, delta_t = delta_t)  
+        print(i/len(f_val_list))
     
+        result = run_test(params)
+    
+        mean_T_sim.append(result['mean_T'])
+        CVT2_sim.append(result['CVT2'])
+        
+    # Equations
+    
+    mean_T_eq = []
+    CVT2_eq = []
+    pf_eq = []
+    
+    for f_val in f_val_list:
+        T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
+        mean_T_eq.append(T_mean_eq_val)
+        CVT2_eq.append(CVT2T_eq_val)
+
+
+    mTs.append(mean_T_sim)
+    mTe.append(mean_T_eq)
+    cs.append(CVT2_sim)
+    ce.append(CVT2_eq)
+    
+mean_T_sim = np.array(mTs)
+CVT2_sim = np.array(cs)
+mean_T_eq = np.array(mTe)
+CVT2_eq = np.array(ce)
+
+
 mean_T_sim = np.array(mean_T_sim)
-CVT2_sim = np.array(CVT2_sim)
 mean_T_eq = np.array(mean_T_eq)
+CVT2_sim = np.array(CVT2_sim)
 CVT2_eq = np.array(CVT2_eq)
 
 
-fontsize = 15
+delt = []
+errdelt = []
+f_vec = []
+for i,x in enumerate(mean_T_sim.T):
+    mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
+    delt.append(mean_cntr[0])
+    errdelt.append(mean_cntr[1][1]-mean_cntr[0])
+    f_vec.append(f_val_list[i])
+
+mean_T_sim = np.mean(mean_T_sim, axis = 0)
+mean_T_eq = np.mean(mean_T_eq, axis = 0)
+CVT2_sim = np.mean(CVT2_sim, axis = 0)
+CVT2_eq = np.mean(CVT2_eq, axis = 0)
+
+fontsize = 10
 lw = 2
 fig, ax = plt.subplots(1,2)
 ax[0].plot(f_val_list, 1/mean_T_sim, label = r'$<T>$ simulations', linewidth=lw)
@@ -383,6 +420,8 @@ ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 theoretical', linestyle = '-', lin
 ax[1].set_ylabel(r'noise $CV_{T}^2$', fontsize = fontsize)
 ax[0].tick_params(axis ='both', labelsize = fontsize)
 ax[1].tick_params(axis ='both', labelsize = fontsize)
+ax[0].set_xlim([0,100])
+ax[1].set_xlim([0,100])
 
 ax[0].plot([], [], ' ', label = r'${}$ as a function of $f$'.format(xname))
 ax[1].plot([], [], ' ', label = r'${}$ as a function of $f$'.format(xname))
@@ -394,5 +433,7 @@ aval = 0.2
 ax[0].grid(True, alpha = aval)
 ax[1].grid(True, alpha = aval)
 
+ax[0].errorbar(f_vec,1/np.array(delt),yerr=errdelt, fmt='o',mec='k',capsize=5,markersize='3',elinewidth=3,c='#0075BD')
+    
 plt.tight_layout()
 plt.show()
