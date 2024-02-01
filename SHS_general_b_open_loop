@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import bayes_mvs as bayesest
 
 def get_time_to(text, f, ku, Mu, nu):
     
@@ -266,6 +267,73 @@ vth = 0.2
 
 delta_t = 0.01
 
+
+##########################
+
+mTs = []
+mTe = []
+cs = []
+ce = []
+
+n_times = 50
+for ntime in range(n_times):
+    print(ntime)
+
+    # Simulations
+    mean_T_sim = []
+    CVT2_sim = []
+    
+    for i, f_val in enumerate(f_val_list):
+        params = to_dict(run_time = run_time, f = f_val, Mu = M,
+                         pu = pr, cu = c, ku = k,
+                         xname=xname, x0=x0, x1=x1, Hx=Hx,cx=cx,
+                         tauv = tauv, vth = vth, delta_t = delta_t)  
+        print(i/len(f_val_list))
+    
+        result = run_test(params)
+    
+        mean_T_sim.append(result['mean_T'])
+        CVT2_sim.append(result['CVT2'])
+        
+    # Equations
+    
+    mean_T_eq = []
+    CVT2_eq = []
+    pf_eq = []
+    
+    for f_val in f_val_list:
+        T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
+        mean_T_eq.append(T_mean_eq_val)
+        CVT2_eq.append(CVT2T_eq_val)
+
+
+    mTs.append(mean_T_sim)
+    mTe.append(mean_T_eq)
+    cs.append(CVT2_sim)
+    ce.append(CVT2_eq)
+    
+mean_T_sim = np.array(mTs)
+CVT2_sim = np.array(cs)
+mean_T_eq = np.array(mTe)
+CVT2_eq = np.array(ce)
+
+
+mean_T_sim = np.array(mean_T_sim)
+mean_T_eq = np.array(mean_T_eq)
+CVT2_sim = np.array(CVT2_sim)
+CVT2_eq = np.array(CVT2_eq)
+
+
+mean_T_sim = np.mean(mean_T_sim, axis = 0)
+mean_T_eq = np.mean(mean_T_eq, axis = 0)
+CVT2_sim = np.mean(CVT2_sim, axis = 0)
+CVT2_eq = np.mean(CVT2_eq, axis = 0)
+
+
+##########################
+
+
+
 # Simulations
 mean_T_sim = []
 CVT2_sim = []
@@ -311,3 +379,7 @@ ax[1].legend()
 
 plt.tight_layout()
 plt.show()
+
+
+# data is a list or array
+# time is the list of frequencies
