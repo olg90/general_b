@@ -219,8 +219,6 @@ def get_CVT2_toy(k, f, M, pr, tauv, vth, c):
     result = numerator / denominator
 
     return result
-    
-
 
 def get_equations(f, params):
     
@@ -235,10 +233,7 @@ def get_equations(f, params):
     T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
     CVT2 = get_CVT2(f, k, M, pr, tauv, vth, c)
     
-    T_mean_toy = get_T_mean_toy(k, f, M, pr, tauv, vth, c)
-    CVT2_toy = get_CVT2_toy(k, f, M, pr, tauv, vth, c)
-
-    return T_mean, CVT2, T_mean_toy, CVT2_toy
+    return T_mean, CVT2
 
 
 
@@ -252,8 +247,8 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-f_max = 500
-n_samples = 200
+f_max = 100
+n_samples = 100
 f_val_list = np.linspace(0,f_max, n_samples)
 
 run_time = 15
@@ -261,68 +256,61 @@ run_time = 15
 M = 100
 pr = 0.2
 c = 0.001
-k = 5
+k = 100
 tauv = 1
 vth = 0.2
 
 delta_t = 0.01
 
-
-##########################
+# Simulations
 
 mTs = []
 mTe = []
 cs = []
-ce = []
+ce=[]
 
-n_times = 50
-for ntime in range(n_times):
-    print(ntime)
-
-    # Simulations
+ntimes = 2
+for ntime in range(ntimes):
     mean_T_sim = []
     CVT2_sim = []
-    
+
     for i, f_val in enumerate(f_val_list):
         params = to_dict(run_time = run_time, f = f_val, Mu = M,
-                         pu = pr, cu = c, ku = k,
-                         xname=xname, x0=x0, x1=x1, Hx=Hx,cx=cx,
+                         pu = pr, cu = c, ku = k, 
                          tauv = tauv, vth = vth, delta_t = delta_t)  
         print(i/len(f_val_list))
     
         result = run_test(params)
-    
+
         mean_T_sim.append(result['mean_T'])
         CVT2_sim.append(result['CVT2'])
-        
+
     # Equations
     
     mean_T_eq = []
     CVT2_eq = []
-    pf_eq = []
-    
+
     for f_val in f_val_list:
         T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
         mean_T_eq.append(T_mean_eq_val)
         CVT2_eq.append(CVT2T_eq_val)
-
-
+        
+        
     mTs.append(mean_T_sim)
     mTe.append(mean_T_eq)
     cs.append(CVT2_sim)
     ce.append(CVT2_eq)
     
-mean_T_sim = np.array(mTs)
-CVT2_sim = np.array(cs)
-mean_T_eq = np.array(mTe)
-CVT2_eq = np.array(ce)
 
+mean_T_sim = np.array(mTs)
+mean_T_eq = np.array(mTe)
+CVT2_sim = np.array(cs)
+CVT2_eq = np.array(ce)
 
 mean_T_sim = np.array(mean_T_sim)
 mean_T_eq = np.array(mean_T_eq)
 CVT2_sim = np.array(CVT2_sim)
 CVT2_eq = np.array(CVT2_eq)
-
 
 mean_T_sim = np.mean(mean_T_sim, axis = 0)
 mean_T_eq = np.mean(mean_T_eq, axis = 0)
@@ -330,49 +318,13 @@ CVT2_sim = np.mean(CVT2_sim, axis = 0)
 CVT2_eq = np.mean(CVT2_eq, axis = 0)
 
 
-##########################
-
-
-
-# Simulations
-mean_T_sim = []
-CVT2_sim = []
-
-
-for i, f_val in enumerate(f_val_list):
-    params = to_dict(run_time = run_time, f = f_val, Mu = M,
-                     pu = pr, cu = c, ku = k, 
-                     tauv = tauv, vth = vth, delta_t = delta_t)  
-    print(i/len(f_val_list))
-
-    result = run_test(params)
-
-    mean_T_sim.append(result['mean_T'])
-    CVT2_sim.append(result['CVT2'])
-    
-# Equations
-
-mean_T_eq = []
-CVT2_eq = []
-meanTtoy = []
-cvt2toy = []
-
-for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val, Ttoy, Ctoy = get_equations(f_val, params)
-    mean_T_eq.append(T_mean_eq_val)
-    CVT2_eq.append(CVT2T_eq_val)
-    meanTtoy.append(Ttoy)
-    cvt2toy.append(Ctoy)
-    
 fig, ax = plt.subplots(1,2)
-ax[0].plot(f_val_list, mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_val_list, mean_T_eq, label = '<T> OL model')
-ax[0].plot(f_val_list, meanTtoy, label = '<T> Toy model')
+ax[0].plot(f_val_list, 1/mean_T_sim, label = '<T> Simulations')
+ax[0].plot(f_val_list, 1/mean_T_eq, label = '<T> OL model')
 ax[0].set_xlabel('Action potential frequency, (Hz)')
 ax[0].set_ylabel('$\\langle T \\rangle$')
 ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
 ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
-ax[1].plot(f_val_list, cvt2toy, label = 'CVT2 Toy model')
 ax[1].set_ylabel('$CV_{T}^2$')
 ax[0].legend()
 ax[1].legend()
