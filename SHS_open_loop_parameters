@@ -360,7 +360,9 @@ for ntime in range(n_times):
                          pu = pr, cu = c, ku = k,
                          xname=xname, x0=x0, x1=x1, Hx=Hx,cx=cx,
                          tauv = tauv, vth = vth, delta_t = delta_t)
-        print(i/len(f_val_list))
+# =============================================================================
+#         print(i/len(f_val_list))
+# =============================================================================
 
         result = run_test(params)
 
