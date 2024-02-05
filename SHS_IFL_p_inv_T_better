@@ -32,8 +32,10 @@ def get_arg_type(i):
     if i == 0:
         return 'f'
     if i == 1:
-        return 'n1'
+        return 'pf'
     if i == 2:
+        return 'n1'
+    if i == 3:
         return 'n2'
     else:
         return 'measure'
@@ -192,9 +194,9 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
 #     return CVT2
 # =============================================================================
 
-def get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, cp, Hp, pmin, vth, tauv):
+def get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, vth, tauv):
     # Intermediate calculations
-    pi = ((cp * f)**Hp + pmin) / (1 + (cp * f)**Hp)
+    pi = get_pe(f, c1, k1, M1, p1, vth, tauv)
     
     b1MeanSS = p1 * k1 * M1 / (f * p1 + k1)
     b2MeanSS = p2 * k2 * M2 / (f * p2 + k2)
@@ -231,7 +233,11 @@ def get_equations(f, params):
 
     T_mean = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth)
 
-    CVT2 = get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, cp, Hp, pmin, vth, tauv)
+# =============================================================================
+#     CVT2 = get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, cp, Hp, pmin, vth, tauv)
+# =============================================================================
+    
+    CVT2 = 1
 
     return T_mean, CVT2
 
@@ -247,30 +253,26 @@ def get_equations(f, params):
 # Values of c to test
 f_max = 200
 
-f_vals = np.linspace(10, f_max, 100)
+f_vals = np.linspace(0, f_max, 100)
 
 run_time = 15
 
-p1 = 0.1
-p2 = 0.004 # 0.004
+p1 = 0.2 # 0.1
+p2 = 0.005 # 0.005
 
-M1 = 50
-M2 = 50
+M1 = 100 # 50
+M2 = 100 # 50
 
-c1 = 0.01
-c2 = 0.01
+c1 = 0.01 #0.01
+c2 = 0.01 # 0.01
 
-k1 = 1
-k2 = 10
+k1 = 1 # 1 
+k2 = 10 # 10
 
 tauv = 1
 vth = 0.2
 
 print(c1*k1*M1, c2*k2*M2)
-
-cp = 0.01 #0.01
-Hp = 2 #1.1, #1.5
-pmin = 0.2
 
 delta_t = 0.01
 
@@ -281,7 +283,7 @@ mTe = []
 cs = []
 ce = []
 
-n_times = 4
+n_times = 50
 for ntime in range(n_times):
 
     # Simulations
@@ -293,7 +295,6 @@ for ntime in range(n_times):
         pe = get_pe(f_val, c1, k1, M1, p1, vth, tauv)
         params = to_dict(run_time = run_time, f = f_val, M1 = M1, M2 = M2,
                          p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pe = pe, 
-                         cp = cp, Hp = Hp, pmin = pmin,
                          k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
         print(j/len(f_vals))
     
@@ -310,7 +311,6 @@ for ntime in range(n_times):
         pe = get_pe(f_val, c1, k1, M1, p1, vth, tauv)
         params = to_dict(run_time = run_time, f = f_val, M1 = M1, M2 = M2,
                          p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pe = pe, 
-                         cp = cp, Hp = Hp, pmin = pmin,
                          k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
         T_mean_eq_val, CVT2_eq_val = get_equations(f_val, params)
         mean_T_eq.append(T_mean_eq_val)
@@ -381,7 +381,7 @@ F_eq = 1/np.array(mean_T_eq)
 # ax[1].errorbar(f_vec,deltC,yerr=errdeltC, fmt='o',mec='k',capsize=4,markersize='2',elinewidth=2,c='#0075BD')
 #     
 # =============================================================================
-
+#%%
 fontsize = 20
 
 plt.plot(f_actual, F_sim, label = 'simulations')
@@ -390,7 +390,10 @@ plt.xlabel('excitatory firing frequency, $f_e$ $(Hz)$', fontsize = fontsize)
 plt.ylabel(r'mean output frequency, $\langle F \rangle$ $(Hz)$', fontsize = fontsize)
 plt.tick_params(axis = 'both', labelsize = fontsize)
 plt.errorbar(f_vec,1/np.array(deltT),yerr=errdeltT, fmt='o',mec='k',capsize=4,markersize='2',elinewidth=1,c='#0075BD', alpha = 0.5)
+plt.plot([], [], ' ', label = r'$p(f) = 1$')
 plt.legend(loc='upper right', fontsize = fontsize - 5)
+plt.grid(True, alpha = 0.6)
+
 
 plt.subplots_adjust(
 top=0.95,
