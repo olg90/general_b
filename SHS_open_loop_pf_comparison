@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.stats import bayes_mvs as bayesest
 
 def get_time_to(text, f, ku, Mu, nu):
     
@@ -231,7 +232,7 @@ def get_equations(f, params):
 
 # Values of c to test
 f_max = 500
-n_samples = 200
+n_samples = 100
 f_val_list = np.linspace(0,f_max, n_samples)
 
 run_time = 15
@@ -246,33 +247,110 @@ vth = 0.2
 delta_t = 0.01
 
 # Simulations
-mean_T_sim = []
-CVT2_sim = []
-pf_sim = []
 
-for i, f_val in enumerate(f_val_list):
-    params = to_dict(run_time = run_time, f = f_val, Mu = M,
-                     pu = pr, cu = c, ku = k, 
-                     tauv = tauv, vth = vth, delta_t = delta_t)  
-    print(i/len(f_val_list))
+mTs = []
+mTe = []
+cs = []
+ce = []
+pfs = []
+pfe = []
 
-    result = run_test(params)
 
-    mean_T_sim.append(result['mean_T'])
-    CVT2_sim.append(result['CVT2'])
-    pf_sim.append(1/(f_val*result['mean_T']))
+ntimes = 4 # 50 
+for ntime in range(ntimes):
+    print(ntime)
     
-# Equations
+    mean_T_sim = []
+    mean_T_eq = []
+    CVT2_sim = []
+    CVT2_eq = []
+    pf_sim = []
+    pf_eq = []
 
-mean_T_eq = []
-CVT2_eq = []
-pf_eq = []
+    for i, f_val in enumerate(f_val_list):
+        params = to_dict(run_time = run_time, f = f_val, Mu = M,
+                         pu = pr, cu = c, ku = k, 
+                         tauv = tauv, vth = vth, delta_t = delta_t)  
+# =============================================================================
+#         print(i/len(f_val_list))
+# =============================================================================
+    
+        result = run_test(params)
+        
+        mean_T_sim.append(result['mean_T'])
+        CVT2_sim.append(result['CVT2'])
+        pf_sim.append(1/(f_val*result['mean_T']))
 
-for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
-    mean_T_eq.append(T_mean_eq_val)
-    CVT2_eq.append(CVT2T_eq_val)
-    pf_eq.append(1/(f_val*T_mean_eq_val))
+    for f_val in f_val_list:
+        T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
+        mean_T_eq.append(T_mean_eq_val)
+        CVT2_eq.append(CVT2T_eq_val)
+        pf_eq.append(1/(f_val*T_mean_eq_val))
+        
+    mTs.append(mean_T_sim)
+    mTe.append(mean_T_eq)
+    cs.append(CVT2_sim)
+    ce.append(CVT2_eq)
+    pfs.append(pf_sim)
+    pfe.append(pf_eq)
+        
+mean_T_sim = np.array(mTs)
+CVT2_sim = np.array(cs)
+mean_T_eq = np.array(mTe)
+CVT2_eq = np.array(ce)
+pf_sim = np.array(pfs)
+pf_eq = np.array(pfe)
+
+mean_T_sim = np.array(mean_T_sim)
+mean_T_eq = np.array(mean_T_eq)
+CVT2_sim = np.array(CVT2_sim)
+CVT2_eq = np.array(CVT2_eq)
+
+deltp = []
+errdeltp = []
+
+deltT = []
+errdeltT = []
+
+deltC = []
+errdeltC = []
+
+CV2d = []
+errcv2d = []
+
+f_vec = []
+for i,x in enumerate(mean_T_sim.T):
+    mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
+    deltT.append(mean_cntr[0])
+    errdeltT.append(mean_cntr[1][1]-mean_cntr[0])
+    f_vec.append(f_val_list[i])
+
+for i,x in enumerate(CVT2_sim.T):
+# =============================================================================
+#     mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
+#     deltC.append(mean_cntr[0])
+#     errdeltC.append(mean_cntr[1][1]-mean_cntr[0])
+# =============================================================================
+    mean_cntr, var_cntr, std_cntr = bayesest(CVT2_sim.T,alpha=0.95)
+    deltC.append(var_cntr[0]/mean_cntr[0]**2)
+    errv=(var_cntr[1][1]-var_cntr[0])/mean_cntr[0]**2+2*(mean_cntr[1][1]-mean_cntr[0])*var_cntr[0]/mean_cntr[0]**3
+    errdeltC.append(errv)
+
+for i,x in enumerate(pf_sim.T):
+    mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
+    deltp.append(mean_cntr[0])
+    errdeltp.append(mean_cntr[1][1]-mean_cntr[0])
+
+mean_T_sim = np.mean(mean_T_sim, axis = 0)
+mean_T_eq = np.mean(mean_T_eq, axis = 0)
+CVT2_sim = np.mean(CVT2_sim, axis = 0)
+CVT2_eq = np.mean(CVT2_eq, axis = 0)
+pf_cv2 = np.var(pf_sim, axis = 0)/np.mean(pf_sim, axis = 0)
+pf_sim = np.mean(pf_sim, axis = 0)
+pf_eq = np.mean(pf_eq, axis = 0)
+
+
+        
 
 #%%
 
@@ -313,7 +391,7 @@ for f_val in f_val_list:
 fontsize = 15
 
 # Plotting the data
-plt.figure()  # Adjust figure size as needed
+plt.subplot(1,2,1)
 plt.plot(f_val_list, pf_sim, label='simulated p(f)', linewidth=2, marker='.', markersize=8)
 plt.plot(f_val_list, pf_eq, label='theoretical p(f)', linestyle='-', linewidth=3)
 
@@ -321,7 +399,13 @@ plt.plot(f_val_list, pf_eq, label='theoretical p(f)', linestyle='-', linewidth=3
 plt.xlabel('presynaptic neuron input frequency, $f$ (Hz)', fontsize=fontsize)
 plt.ylabel('probability of postsynaptic\n neuron firing, $p(f)$', fontsize=fontsize)
 
+plt.errorbar(f_vec,deltp,yerr=errdeltp, fmt='o',mec='k',capsize=4,markersize='2',elinewidth=1,c='#0075BD', alpha = 0.5)
+
+
 plt.tick_params(axis='both', labelsize=fontsize)
 plt.legend(fontsize=fontsize)
 plt.grid(True, linestyle='--', alpha=0.7)
+
+plt.subplot(1,2,2)
+plt.plot(f_val_list, pf_cv2)
 plt.show()
