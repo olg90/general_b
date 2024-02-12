@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import bayes_mvs as bayesest
 
 def get_time_to(text, args, n1, n2):
     
@@ -8,7 +7,10 @@ def get_time_to(text, args, n1, n2):
         return np.random.exponential(1./args['f'])
     
     if text == 'pf':
-        return np.random.exponential(1./args['f']/args['pe'])
+# =============================================================================
+#         return np.random.exponential(1./(args['f']*args['pi']))
+# =============================================================================
+        return np.random.exponential(1./(args['f']*get_pi(args['f'], args['c1'], args['k1'], args['M1'], args['p1'], args['vth'], args['tauv'])))
     
     if text == 'n1':
         M1 = args['M1']
@@ -27,7 +29,7 @@ def get_time_to(text, args, n1, n2):
         else:
             return np.inf
         
-def get_arg_type(i):
+def get_arg_typi(i):
     
     if i == 0:
         return 'f'
@@ -84,10 +86,10 @@ def run_test(args):
         times_array = np.array([time_to_f, time_to_pf, time_to_n1, time_to_n2, t_measure])
     
         t_min_arg = np.argmin(times_array)
-        arg_type = get_arg_type(t_min_arg)
+        arg_typi = get_arg_typi(t_min_arg)
         t_min = times_array[t_min_arg]
 
-        if arg_type == 'f':
+        if arg_typi == 'f':
 
             preneuron_firing_history.append(current_time)
 
@@ -108,7 +110,7 @@ def run_test(args):
             current_time += t_min
             t_measure -= t_min
             
-        elif arg_type == 'pf':
+        elif arg_typi == 'pf':
 
             preneuron_firing_history.append(current_time)
 
@@ -125,7 +127,7 @@ def run_test(args):
             current_time += t_min
             t_measure -= t_min
 
-        elif arg_type == 'n1':
+        elif arg_typi == 'n1':
             
             if n1 < M1:
                 n1 += 1
@@ -133,7 +135,7 @@ def run_test(args):
             current_time += t_min
             t_measure -= t_min
             
-        elif arg_type == 'n2':
+        elif arg_typi == 'n2':
             
             if n2 < M2:
                 n2 += 1            
@@ -166,17 +168,17 @@ def run_test(args):
             'mean_T':mean_inter_AP_time, 
             'CVT2':CVT2}
 
-def get_pe(f, c1, k1, M1, p1, vth, tauv):
-    return tauv * np.log(1/(1-(((k1 + f * p1)*vth)/(c1 * f*k1*M1*p1*tauv)))) 
+def get_pi(f, c1, k1, M1, p1, vth, tauv):
+    return tauv * np.log(1/(1-(((k1 + f * p1)*vth)/(c1 * f*k1*M1*p1*tauv))))
 # =============================================================================
 #     return 1
 # =============================================================================
 
 def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
-    pe = get_pe(f, c1, k1, M1, p1, vth, tauv)
-    b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pe)
-    b2ss = p2*(k2*M2)/(k2 + f*p2*pe)
-    vat = (1 + pe)*c1*f*b1ss - c2*f*b2ss*pe
+    pi = get_pi(f, c1, k1, M1, p1, vth, tauv)
+    b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pi)
+    b2ss = p2*(k2*M2)/(k2 + f*p2*pi)
+    vat = (1 + pi)*c1*f*b1ss - c2*f*b2ss*pi
     return tauv * np.log(1 / (1 - vth / (vat * tauv)))
 
 # =============================================================================
@@ -196,17 +198,17 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
 
 def get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, vth, tauv):
     # Intermediate calculations
-    pi = get_pe(f, c1, k1, M1, p1, vth, tauv)
-    
+    pi = get_pi(f, c1, k1, M1, p1, vth, tauv)
+
     b1MeanSS = p1 * k1 * M1 / (f * p1 + k1)
     b2MeanSS = p2 * k2 * M2 / (f * p2 + k2)
-    
+
     bMeanSS = c1 * p1 * k1 * M1 / (f * p1 + k1) - c2 * p2 * k2 * M2 / (f * p2 + k2) * pi
-    
+
     bVarianceSS = c1**2 * (1 - p1) * b1MeanSS + c2**2 * pi * (1 - p2) * b2MeanSS
-    
+
     bSquaredMeanSS = bVarianceSS + bMeanSS**2
-    
+
     # Main expression
     numerator = vth * (-2 * f * tauv * vth * bMeanSS**2 + (-1 + 2 * f * tauv) * vth * bSquaredMeanSS + 2 * f * tauv * bMeanSS * bSquaredMeanSS)
     denominator = 2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2
@@ -241,45 +243,26 @@ def get_equations(f, params):
 
     return T_mean, CVT2
 
-def get_stats(f_max, f_vals, run_time, p1, p2, M1, M2, c1, c2, k1, k2, tauv, vth, delta_t):
+def get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t):
+    params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
+                     p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pi = pi, 
+                     k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
+    result = run_test(params)
 
-    # Simulations
-    mean_T_sim = []
-    CVT2_sim = []
-    pf_sim = []
-            
+    mean_T_sim=result['mean_T']
+    CVT2_sim=result['CVT2']
+    pf_sim=1/(f*result['mean_T'])
     
-    # Simulations
-    for j, f_val in enumerate(f_vals):
-        pe = get_pe(f_val, c1, k1, M1, p1, vth, tauv)
-        params = to_dict(run_time = run_time, f = f_val, M1 = M1, M2 = M2,
-                         p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pe = pe, 
-                         k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
-        print(j/len(f_vals))
-    
-        result = run_test(params)
-    
-        mean_T_sim.append(result['mean_T'])
-        CVT2_sim.append(result['CVT2'])
-        pf_sim.append(1/(f_val*result['mean_T']))
-    
-    # Equations
-    mean_T_eq = []
-    CVT2_eq = []
-    pf_eq = []
-    
-    for f_val in f_vals:
-        pe = get_pe(f_val, c1, k1, M1, p1, vth, tauv)
-        params = to_dict(run_time = run_time, f = f_val, M1 = M1, M2 = M2,
-                         p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pe = pe, 
-                         k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
-        T_mean_eq_val, CVT2_eq_val = get_equations(f_val, params)
-        mean_T_eq.append(T_mean_eq_val)
-        CVT2_eq.append(CVT2_eq_val)
-        pf_eq.append(1/(f_val*T_mean_eq_val))
-        
-        retlist = [mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq]
-    return retlist
+# =============================================================================
+#     pf = get_pi(f, c1, k1, M1, p1, vth, tauv)
+# =============================================================================
+    params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
+                     p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pi = pi, 
+                     k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
+    T_mean_eq_val, CVT2_eq_val = get_equations(f, params)
+    pf_eq=1/(f*T_mean_eq_val)
+
+    return mean_T_sim, T_mean_eq_val, CVT2_sim, CVT2_eq_val, pf_sim, pf_eq
 
 ###############################################################################
 #
@@ -288,78 +271,245 @@ def get_stats(f_max, f_vals, run_time, p1, p2, M1, M2, c1, c2, k1, k2, tauv, vth
 ###############################################################################
 # Test 1
 
-# Values of c to test
-f_max = 200
-
-f_vals = np.linspace(0, f_max, 100)
-
-run_time = 60
-
 #######################
-p1 = 0.05 # 0.2
-p2 = 0.02 # 0.02
+run_time = 15
+f = 50
+pi = 1
+
+p1 = 0.2 # 0.2
+p2 = 0.025 # 0.02
 
 M1 = 100 # 100
 M2 = 100 # 100
 
-c1 = 0.01 # 0.01
+c1 = 0.0075 # 0.01
 c2 = 0.01 # 0.01
 
-k1 = 1 # 1 
+c1*M1/c2/M2
+
+k1 = 1 # 1
 k2 = 10 # 10
 
-tauv = 1 # 1
-vth = 0.2 #0.2
+tauv = 0.3 # 1
+vth = 0.07 #0.2
+delta_t = 0.001
 #######################
-print(c1*k1*M1, c2*k2*M2)
 
-delta_t = 0.01
-
-def nmse_without_nans(data1, data2):
-    valid_indices = np.logical_and(~np.isnan(data1), ~np.isnan(data2))
-    valid_data1 = data1[valid_indices]
-    valid_data2 = data2[valid_indices]
-    mse = np.mean((valid_data1 - valid_data2)**2)
-    target_variance = np.var(valid_data1)
-    nmse = mse / target_variance
-    return nmse
+params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
+                 p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pi = pi, 
+                 k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
+result = run_test(params)
 
 
-data = get_stats(f_max, f_vals, run_time, p1, p2, M1, M2, c1, c2, k1, k2, tauv, vth, delta_t)
-mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+vh = result['v_history']
+
+# =============================================================================
+# import os
+# os.chdir(r'C:\Users\olive\OneDrive\Desktop\PhD\Research\Neuron\IFL')
+# vho= np.load('vhol.npy')
+# =============================================================================
 
 
-F_sim = 1/np.array(mean_T_sim)
-F_eq = 1/np.array(mean_T_eq)
+#%%
 
+# Example data
+vst = 0
+nsec = 2
+add = 10000 * nsec
+vln = vst + add
+
+# Font settings
 fontsize = 20
-fig, ax = plt.subplots(1, 3, figsize=(15, 5))  # Set figsize to adjust the overall width of the figure
+font_family = 'Arial'
 
-# Subplot 1
-ax[0].plot(f_vals, F_sim, label='simulations')
-ax[0].plot(f_vals, F_eq, label='equation')
-ax[0].set_xlabel('excitatory firing frequency, $f_e$ (Hz)', fontsize=fontsize)
-ax[0].set_ylabel(r'mean output frequency, $\langle F \rangle$ (Hz)', fontsize=fontsize)
-ax[0].tick_params(axis='both', labelsize=fontsize)
-ax[0].legend(loc='upper left', fontsize=fontsize-5)
+plt.subplot(2, 1, 1)
+plt.axhline(vth, 0, 3, label='AP threshold$=0.07$ $volts$', color='k',
+            linewidth=2, linestyle='-')
+plt.plot(vho[:, 1][vst:vln], vho[:, 0][vst:vln], linewidth=1.5, label='membrane potential')
+plt.xticks([])
+plt.yticks(fontsize=fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
+plt.ylim([0, vth + 0.05])
+plt.xlim([0, nsec])
+plt.text(1.5, 0.1, 'Open loop', fontsize=fontsize - 5, fontname=font_family)
+plt.legend(loc='upper left', fontsize=fontsize - 5, bbox_to_anchor=(0, 1.3), framealpha=1, edgecolor='k', shadow=True)
 
-# Subplot 2
-ax[1].plot(f_vals, CVT2_sim, label='simulations')
-ax[1].set_xlabel('excitatory firing frequency, $f_e$ (Hz)', fontsize=fontsize)
-ax[1].set_ylabel(r'noise, $CV^2_T$', fontsize=fontsize)
-ax[1].tick_params(axis='both', labelsize=fontsize)
-ax[1].legend(loc='upper right', fontsize=fontsize-5)
+plt.subplot(2, 1, 2)
+plt.axhline(vth, 0, 3, label='AP threshold $v_{{th}}=0.07$ $volts$', color='k',
+            linewidth=2, linestyle='-')
+plt.plot(vh[:, 1][vst:vln], vh[:, 0][vst:vln], linewidth=1.5, label='membrane potential $v(t), volts$')
+plt.ylabel('                      membrane potential $v$, $volts$', fontsize=fontsize, fontname=font_family)
+plt.xlabel('time $t$, $sec$', fontsize=fontsize, fontname=font_family)
+plt.xticks(fontsize=fontsize)
+plt.yticks(fontsize=fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
+plt.ylim([0, vth + 0.05])
+plt.xlim([0, nsec])
+plt.text(1.05, 0.1, 'Incoherent feed-forward', fontsize=fontsize - 5, fontname=font_family)
 
-# Subplot 3
-# Assuming pf_sim and pf_eq are defined elsewhere
-ax[2].plot(f_vals, pf_sim, label='simulations')
-ax[2].plot(f_vals, pf_eq, label='equation')
-ax[2].set_xlabel('excitatory firing frequency, $f_e$ (Hz)', fontsize=fontsize)
-ax[2].set_ylabel('probability of postsynaptic\nneuron firing p(f)', fontsize=fontsize)  # Add a ylabel appropriate for pf_sim and pf_eq
-ax[2].tick_params(axis='both', labelsize=fontsize)
-ax[2].legend(loc='upper left', fontsize=fontsize-5)
-
-plt.tight_layout()
 plt.show()
 
 
+# =============================================================================
+# ntimes = 20
+# k1_list = np.linspace(1,10,ntimes)
+# k2_list = np.linspace(1,10,ntimes)
+# 
+# heatmap = np.zeros((ntimes,ntimes))
+# 
+# for i,k1 in enumerate(k1_list):
+#     print(i/ntimes)
+#     for j,k2 in enumerate(k2_list):
+#         data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
+#         mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+#         heatmap[i,j] = 1/mean_T_sim
+# =============================================================================
+        
+
+
+
+# =============================================================================
+# # heatmap of pf for vth vs f
+# nx = 50
+# xs=np.linspace(0, 1, nx)
+# ntimes=50
+# f_vals = np.linspace(0, 100, ntimes)
+# datasets = np.zeros((nx, ntimes))
+# for j, vth in enumerate(xs): # modify here j, X <--
+#     print(j/nx)
+#     for i,f in enumerate(f_vals):
+#         data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
+#         mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+#         datasets[j,i] = pf_sim
+# datasets = np.array(datasets)
+#     
+# 
+# # Assuming 'datasets', 'f_vals', and 'xs' are defined
+# 
+# num_ticks = 5
+# x_tick_locs = np.linspace(min(f_vals), max(f_vals), num_ticks)
+# y_tick_locs = np.linspace(min(xs), max(xs), num_ticks)
+# 
+# fontsize = 20
+# 
+# plt.imshow(datasets, origin='lower', cmap='rainbow', aspect='auto', extent=(min(f_vals), max(f_vals), min(xs), max(xs)), vmin=0, vmax=1)
+# colorbar = plt.colorbar(orientation='vertical')  # Use orientation='horizontal' for horizontal colorbar
+# 
+# # Rotate colorbar label
+# colorbar.set_label(f'postsynaptic firing probability', fontsize=fontsize, rotation=270, labelpad=30)  # Adjust rotation and labelpad accordingly
+# colorbar.ax.tick_params(labelsize=fontsize)
+# 
+# plt.xlabel(f'input frequency $f$, $Hz$', fontsize=fontsize)
+# plt.ylabel(f'AP-firing threshold $vth$, $volts$', fontsize=fontsize)
+# 
+# # Set the tick locations and labels
+# plt.xticks(x_tick_locs, fontsize=fontsize)
+# plt.yticks(y_tick_locs, fontsize=fontsize)
+# 
+# plt.show()
+# =============================================================================
+
+# =============================================================================
+# num_ticks = 5
+# x_tick_locs = np.linspace(min(f_vals), max(f_vals), num_ticks)
+# y_tick_locs = np.linspace(min(xs), max(xs), num_ticks)
+# 
+# fontsize = 20
+# 
+# plt.imshow(datasets, origin='lower', cmap='rainbow', aspect='auto', extent=(min(f_vals), max(f_vals), min(xs), max(xs)), vmin=0, vmax=1)
+# colorbar = plt.colorbar(orientation='vertical')  # Use orientation='horizontal' for horizontal colorbar
+# colorbar.set_label(f'firing probability $p(f)$', fontsize=fontsize)  # Adjust 'Colorbar Label' accordingly
+# colorbar.ax.tick_params(labelsize=fontsize)
+# plt.xlabel(f'input frequency $f$, $Hz$', fontsize=fontsize)
+# plt.ylabel(f'AP-firing threshold $vth$, $volts$', fontsize=fontsize)
+# 
+# # Set the tick locations and labels
+# plt.xticks(x_tick_locs, fontsize=fontsize)
+# plt.yticks(y_tick_locs, fontsize=fontsize)
+# 
+# plt.show()
+# =============================================================================
+#%%
+
+
+
+
+
+
+# =============================================================================
+# nx = 50
+# xs=np.linspace(0, 1, nx)
+# datasets=np.zeros(nx)
+# for j, vth in enumerate(xs): # modify here j, X <--
+#     print(j/nx)
+#     data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
+#     mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+#     datasets[j] = pf_sim
+# datasets = np.array(datasets)
+# 
+# plt.plot(xs, datasets)
+# 
+# =============================================================================
+
+
+
+
+# =============================================================================
+# datasets = []
+# ntimes = 100
+# f_vals = np.linspace(0, 100, ntimes)
+# for i,f in enumerate(f_vals):
+#     print(i/ntimes)
+#     data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
+#     mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+#     datasets.append(data)
+# =============================================================================
+
+# =============================================================================
+# datasets = np.array(datasets)
+# Fs = 1/datasets[:,0]
+# Fe = 1/datasets[:,1]
+# 
+# plt.plot(f_vals, Fs)
+# plt.plot(f_vals, Fe)
+# plt.show()
+# 
+# =============================================================================
+#%%
+# =============================================================================
+# 
+# F_sim = 1/np.array(mean_T_sim)
+# F_eq = 1/np.array(mean_T_eq)
+# 
+# fontsize = 20
+# fig, ax = plt.subplots(1, 3, figsize=(15, 5))  # Set figsize to adjust the overall width of the figure
+# 
+# # Subplot 1
+# ax[0].plot(f_vals, F_sim, label='simulations')
+# ax[0].plot(f_vals, F_eq, label='equation')
+# ax[0].set_xlabel('excitatory firing frequency, $f_e$ (Hz)', fontsize=fontsize)
+# ax[0].set_ylabel(r'mean output frequency, $\langle F \rangle$ (Hz)', fontsize=fontsize)
+# ax[0].tick_params(axis='both', labelsize=fontsize)
+# ax[0].legend(loc='uppir left', fontsize=fontsize-5)
+# 
+# # Subplot 2
+# ax[1].plot(f_vals, CVT2_sim, label='simulations')
+# ax[1].set_xlabel('excitatory firing frequency, $f_e$ (Hz)', fontsize=fontsize)
+# ax[1].set_ylabel(r'noise, $CV^2_T$', fontsize=fontsize)
+# ax[1].tick_params(axis='both', labelsize=fontsize)
+# ax[1].legend(loc='uppir right', fontsize=fontsize-5)
+# 
+# # Subplot 3
+# # Assuming pf_sim and pf_eq are defined elsewhere
+# ax[2].plot(f_vals, pf_sim, label='simulations')
+# ax[2].plot(f_vals, pf_eq, label='equation')
+# ax[2].set_xlabel('excitatory firing frequency, $f_e$ (Hz)', fontsize=fontsize)
+# ax[2].set_ylabel('probability of postsynaptic\nneuron firing p(f)', fontsize=fontsize)  # Add a ylabel appropriate for pf_sim and pf_eq
+# ax[2].tick_params(axis='both', labelsize=fontsize)
+# ax[2].legend(loc='uppir left', fontsize=fontsize-5)
+# 
+# plt.tight_layout()
+# plt.show()
+# 
+# 
+# =============================================================================
