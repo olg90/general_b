@@ -7,10 +7,10 @@ def get_time_to(text, args, n1, n2):
         return np.random.exponential(1./args['f'])
     
     if text == 'pf':
+        return np.random.exponential(1./(args['f']*args['pi']))
 # =============================================================================
-#         return np.random.exponential(1./(args['f']*args['pi']))
+#         return np.random.exponential(1./(args['f']*get_pi(args['f'], args['c1'], args['k1'], args['M1'], args['p1'], args['vth'], args['tauv'])))
 # =============================================================================
-        return np.random.exponential(1./(args['f']*get_pi(args['f'], args['c1'], args['k1'], args['M1'], args['p1'], args['vth'], args['tauv'])))
     
     if text == 'n1':
         M1 = args['M1']
@@ -272,37 +272,96 @@ def get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_
 # Test 1
 
 #######################
-run_time = 15
+run_time = 10
 f = 50
 pi = 1
 
 p1 = 0.2 # 0.2
-p2 = 0.025 # 0.02
+p2 = 0.02 # 0.02
 
 M1 = 100 # 100
 M2 = 100 # 100
 
-c1 = 0.0075 # 0.01
+c1 = 0.01 # 0.01
 c2 = 0.01 # 0.01
-
-c1*M1/c2/M2
 
 k1 = 1 # 1
 k2 = 10 # 10
 
-tauv = 0.3 # 1
-vth = 0.07 #0.2
-delta_t = 0.001
+tauv = 1 # 1
+vth = 0.2 #0.2
+delta_t = 0.01
+
+c2*M2*p2 > c1*M1*p1-vth/tauv
+c1*M1*p1 > c2*M2*p2
 #######################
 
-params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
-                 p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pi = pi, 
-                 k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
-result = run_test(params)
+
+ntimes = 100
+fmax=200
+k1_list = np.linspace(0,fmax,ntimes)
+
+Ts = []
+Te = []
+
+for i,f in enumerate(k1_list):
+    print(i/ntimes)
+    data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
+    mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+    Ts.append(1/mean_T_sim)
+    Te.append(1/mean_T_eq)
+    
+
+#
+
+# Set a constant font size
+font_size = 25
+
+cb = '#1f77b4'
+co = '#ff7f0e'
+
+# Plotting Ts and Te with legends and axis labels
+
+plt.plot(k1_list, Ts, label='simulations', linewidth = 5, linestyle='--', color=cb)
+plt.plot(k1_list, Te, label='theoretical', linewidth = 5, linestyle='-', color=co)
+
+# Legends
+plt.legend(fontsize=font_size-5)
+
+# Axis labels
+plt.xlabel(f'input frequency $f$, $Hz$', fontsize=font_size)
+plt.ylabel(f'output frequency $\\langle F \\rangle$, $Hz$', fontsize=font_size)
+
+# Title if needed
+
+plt.tick_params(axis='both', labelsize = font_size)
+
+# Tick parameters
+plt.xticks(fontsize=font_size)
+plt.yticks(fontsize=font_size)
+
+plt.grid(True, alpha = 0.6)
+
+# Show the plot
+plt.show()
+
+#
 
 
-vh = result['v_history']
 
+
+# =============================================================================
+# params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
+#                  p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1, pi = pi, 
+#                  k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
+# result = run_test(params)
+# =============================================================================
+
+
+# =============================================================================
+# vh = result['v_history']
+# 
+# =============================================================================
 # =============================================================================
 # import os
 # os.chdir(r'C:\Users\olive\OneDrive\Desktop\PhD\Research\Neuron\IFL')
@@ -312,59 +371,60 @@ vh = result['v_history']
 
 #%%
 
-# Example data
-vst = 0
-nsec = 2
-add = 10000 * nsec
-vln = vst + add
-
-# Font settings
-fontsize = 20
-font_family = 'Arial'
-
-plt.subplot(2, 1, 1)
-plt.axhline(vth, 0, 3, label='AP threshold$=0.07$ $volts$', color='k',
-            linewidth=2, linestyle='-')
-plt.plot(vho[:, 1][vst:vln], vho[:, 0][vst:vln], linewidth=1.5, label='membrane potential')
-plt.xticks([])
-plt.yticks(fontsize=fontsize)
-plt.tick_params(axis='both', labelsize=fontsize)
-plt.ylim([0, vth + 0.05])
-plt.xlim([0, nsec])
-plt.text(1.5, 0.1, 'Open loop', fontsize=fontsize - 5, fontname=font_family)
-plt.legend(loc='upper left', fontsize=fontsize - 5, bbox_to_anchor=(0, 1.3), framealpha=1, edgecolor='k', shadow=True)
-
-plt.subplot(2, 1, 2)
-plt.axhline(vth, 0, 3, label='AP threshold $v_{{th}}=0.07$ $volts$', color='k',
-            linewidth=2, linestyle='-')
-plt.plot(vh[:, 1][vst:vln], vh[:, 0][vst:vln], linewidth=1.5, label='membrane potential $v(t), volts$')
-plt.ylabel('                      membrane potential $v$, $volts$', fontsize=fontsize, fontname=font_family)
-plt.xlabel('time $t$, $sec$', fontsize=fontsize, fontname=font_family)
-plt.xticks(fontsize=fontsize)
-plt.yticks(fontsize=fontsize)
-plt.tick_params(axis='both', labelsize=fontsize)
-plt.ylim([0, vth + 0.05])
-plt.xlim([0, nsec])
-plt.text(1.05, 0.1, 'Incoherent feed-forward', fontsize=fontsize - 5, fontname=font_family)
-
-plt.show()
-
-
 # =============================================================================
-# ntimes = 20
-# k1_list = np.linspace(1,10,ntimes)
-# k2_list = np.linspace(1,10,ntimes)
+# # Example data
+# vst = 0
+# nsec = 2
+# add = 10000 * nsec
+# vln = vst + add
 # 
-# heatmap = np.zeros((ntimes,ntimes))
+# # Font settings
+# fontsize = 20
+# font_family = 'Arial'
 # 
-# for i,k1 in enumerate(k1_list):
-#     print(i/ntimes)
-#     for j,k2 in enumerate(k2_list):
-#         data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
-#         mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
-#         heatmap[i,j] = 1/mean_T_sim
+# plt.subplot(2, 1, 1)
+# plt.axhline(vth, 0, 3, label='AP threshold$=0.07$ $volts$', color='k',
+#             linewidth=2, linestyle='-')
+# plt.plot(vho[:, 1][vst:vln], vho[:, 0][vst:vln], linewidth=1.5, label='membrane potential')
+# plt.xticks([])
+# plt.yticks(fontsize=fontsize)
+# plt.tick_params(axis='both', labelsize=fontsize)
+# plt.ylim([0, vth + 0.05])
+# plt.xlim([0, nsec])
+# plt.text(1.5, 0.1, 'Open loop', fontsize=fontsize - 5, fontname=font_family)
+# plt.legend(loc='upper left', fontsize=fontsize - 5, bbox_to_anchor=(0, 1.3), framealpha=1, edgecolor='k', shadow=True)
+# 
+# plt.subplot(2, 1, 2)
+# plt.axhline(vth, 0, 3, label='AP threshold $v_{{th}}=0.07$ $volts$', color='k',
+#             linewidth=2, linestyle='-')
+# plt.plot(vh[:, 1][vst:vln], vh[:, 0][vst:vln], linewidth=1.5, label='membrane potential $v(t), volts$')
+# plt.ylabel('                      membrane potential $v$, $volts$', fontsize=fontsize, fontname=font_family)
+# plt.xlabel('time $t$, $sec$', fontsize=fontsize, fontname=font_family)
+# plt.xticks(fontsize=fontsize)
+# plt.yticks(fontsize=fontsize)
+# plt.tick_params(axis='both', labelsize=fontsize)
+# plt.ylim([0, vth + 0.05])
+# plt.xlim([0, nsec])
+# plt.text(1.05, 0.1, 'Incoherent feed-forward', fontsize=fontsize - 5, fontname=font_family)
+# 
+# plt.show()
 # =============================================================================
-        
+
+
+ntimes = 100
+k1_list = np.linspace(0,100,ntimes)
+
+
+Ts = []
+Te = []
+
+for i,f in enumerate(k1_list):
+    print(i/ntimes)
+    data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, pi, tauv, vth, delta_t)
+    mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
+    Ts.append(1/mean_T_sim)
+    Te.append(1/mean_T_eq)
+    
 
 
 
