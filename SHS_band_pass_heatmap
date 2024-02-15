@@ -190,14 +190,9 @@ fvals = np.linspace(1,fmax,flen)
 
 # heatmap of pf for vth vs f
 xn='k1'
-xmin=1
-xmax=5
-xlen=20
-
 yn = 'k2'
-ymin=1
-ymax=100
-ylen=20
+xmin,xmax,xlen=1,5,50
+ymin,ymax,ylen=1,100,50
 
 xs=np.linspace(xmin,xmax,xlen)
 ys=np.linspace(ymin,ymax,ylen)
@@ -270,11 +265,10 @@ for i, x in enumerate(xs): # modify here j, X <--
         
         
 #%%
-plt.imshow(heatmap[:xlen,:ylen], origin='lower')
-plt.colorbar(cmap='viridis')
+plt.imshow(heatmap, origin='lower', cmap='hot')
+plt.colorbar()
 plt.xlabel('k1')
 plt.ylabel('k2')
 plt.show()
             
-#%%
 
