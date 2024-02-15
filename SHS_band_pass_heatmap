@@ -1,44 +1,34 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
-def get_time_to(text, args, n1, n2):
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace
+from numpy.random import exponential, binomial
+
+def get_time_to(text, f, k1, M1, c1, p1, n1, k2, M2, n2):
     
     if text == 'f':
-        return np.random.exponential(1./args['f'])
-    
-    if text == 'pf':
-        pi = get_pi(args['f'], args['c1'], args['k1'], args['M1'], args['p1'], args['vth'], args['tauv'])
-        return np.random.exponential(1./(args['f']*pi))
-# =============================================================================
-#         return np.random.exponential(1./(args['f']*get_pi(args['f'], args['c1'], args['k1'], args['M1'], args['p1'], args['vth'], args['tauv'])))
-# =============================================================================
+        return exponential(1./f)
     
     if text == 'n1':
-        M1 = args['M1']
-        k1 = args['k1']
-        
         if M1 > n1:
-            return np.random.exponential(1./(k1*(M1-n1)))
+            return exponential(1./(k1*(M1-n1)))
         else:
-            return np.inf
+            return inf
 
     if text == 'n2':
-        M2 = args['M2']
-        k2 = args['k2']
         if M2 > n2:
-            return np.random.exponential(1./(k2*(M2-n2)))
+            return exponential(1./(k2*(M2-n2)))
         else:
-            return np.inf
+            return inf
 
 def get_arg_typi(i):
-
+    
     if i == 0:
         return 'f'
     if i == 1:
-        return 'pf'
-    if i == 2:
         return 'n1'
-    if i == 3:
+    if i == 2:
         return 'n2'
     else:
         return 'measure'
@@ -46,230 +36,124 @@ def get_arg_typi(i):
 def to_dict(**x):
     return x
 
-def run_test(args):
 
-    run_time = args['run_time']
-    
-    M1 = args['M1']
-    M2 = args['M2']
-    
-    c1 = args['c1']
-    c2 = args['c2']
-    
-    p1 = args['p1']
-    p2 = args['p2']
-    
-    tauv = args['tauv']
-    vth = args['vth']
 
-    delta_t = args['delta_t']
+def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
         
     current_time = 0
-    v_membrane = 0
+    
+    v2 = 0
+    v3 = 0
 
     n1 = 0
     n2 = 0
 
-    v_history = [[0, current_time]] # data array
-    AP_times = []
-
-    preneuron_firing_history = []
+    v2_history = [[0, current_time]] # data array
+    v3_history = [[0, current_time]] # data array
     
+    AP_times2 =  []
+    AP_times3 = []
+
+# =============================================================================
+#     preneuron_firing_history = []
+# =============================================================================
+
     t_measure = delta_t
     
     while current_time < run_time:
         
-        time_to_f = get_time_to('f', args, n1, n2) # next reaction time
-        time_to_pf = get_time_to('pf', args, n1, n2)
-        time_to_n1 = get_time_to('n1', args, n1, n2)
-        time_to_n2 = get_time_to('n2', args, n1, n2)
+        time_to_f = get_time_to('f', f, k1, M1, c1, p1, n1, k2, M2, n2)# next reaction time
+        time_to_n1 = get_time_to('n1', f, k1, M1, c1, p1, n1, k2, M2, n2)
+        time_to_n2 = get_time_to('n2', f, k1, M1, c1, p1, n1, k2, M2, n2)
             
-        times_array = np.array([time_to_f, time_to_pf, time_to_n1, time_to_n2, t_measure])
-    
-        t_min_arg = np.argmin(times_array)
+        #Take min of times array
+        times_array = [time_to_f, time_to_n1, time_to_n2, t_measure]
+        t_min_arg = argmin(times_array)
         arg_typi = get_arg_typi(t_min_arg)
-        t_min = times_array[t_min_arg]
+        t_min = min(times_array)
 
         if arg_typi == 'f':
 
-            preneuron_firing_history.append(current_time)
-
-            b1 = np.random.binomial(n1, p1) # Number released
-
-            voltage_addition = c1*b1
-
+            b1 = binomial(n1, p1) # Number released
             if (b1 > 0) and (n1 >= b1):
                 n1 -= b1
 
-            v_membrane += voltage_addition
-            v_history.append([v_membrane, current_time])
-            
-            if v_membrane >= vth:
-                v_membrane = 0
-                AP_times.append(current_time)
+            vadd123 = c1*b1
+                
+            v3 += vadd123
+            v2 += vadd123
 
-            current_time += t_min
-            t_measure -= t_min
-            
-        elif arg_typi == 'pf':
-
-            preneuron_firing_history.append(current_time)
-
-            b2 = np.random.binomial(n2, p2) # Number released
-
-            voltage_addition = - c2*b2
-
-            if (b2 > 0) and (n2 >= b2):
-                n2 -= b2
-
-            v_membrane += voltage_addition
-            v_history.append([v_membrane, current_time])
-
-            current_time += t_min
-            t_measure -= t_min
+            if v2 >= vth2:
+                
+                b2 = binomial(n2, p2) # Number released
+                if (b2 > 0) and (n2 >= b2):
+                    n2 -= b2          
+                vadd23 = c2*b2
+                v3 -= vadd23
+                v2_history.append([v2, current_time])   
+                v3_history.append([v3, current_time])
+                 
+                AP_times2.append([v2,current_time])
+                v2 = 0
+                if v3>vth3:
+                    AP_times3.append([v3,current_time])
+                    v3 = 0
+                
+            else:
+                v2_history.append([v2, current_time])                    
+                v3_history.append([v3, current_time])
+                if v3 > vth3:
+                    AP_times3.append([v3, current_time])
+                    v3 = 0
 
         elif arg_typi == 'n1':
             
             if n1 < M1:
                 n1 += 1
             
-            current_time += t_min
-            t_measure -= t_min
-            
         elif arg_typi == 'n2':
             
             if n2 < M2:
                 n2 += 1            
-            
-            current_time += t_min
-            t_measure -= t_min
-            
         else:
-            v_membrane = v_membrane*np.exp(-t_min/tauv)
+            v3 = v3*exp(-t_min/tau3)
+            v3_history.append([v3, current_time])
             
-            v_history.append([v_membrane, current_time])
-    
-            current_time += t_min
+            v2 = v2*exp(-t_min/tau2)
+            v2_history.append([v2, current_time])
+
+        current_time += t_min
+        t_measure -= t_min   
+        if t_measure == 0:
             t_measure = delta_t
             
-    v_history = np.array(v_history) # data array
-    AP_times = np.array(AP_times)
-    
-    inter_AP_times = np.diff(AP_times)
-    if len(inter_AP_times) < 2:
-        mean_inter_AP_time = np.nan
-        CVT2 = np.nan
+    inter_AP_times3 = diff(AP_times3)
+    if len(inter_AP_times3) < 2:
+        mean_inter_AP_time3 = nan
+        CVT23 = nan
     else:
-        mean_inter_AP_time = np.mean(inter_AP_times)
-        CVT2 = np.var(inter_AP_times) / mean_inter_AP_time**2
-    
-    return {'v_history': np.array(v_history),
-            'AP_times':np.array(AP_times),
-            'inter_AP_times':np.array(inter_AP_times),
-            'mean_T':mean_inter_AP_time, 
-            'CVT2':CVT2}
+        mean_inter_AP_time3 = mean(inter_AP_times3)
+        CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
 
-def get_pi(f, c1, k1, M1, p1, vth, tauv):
-# =============================================================================
-#     return tauv * np.log(1/(1-(((k1 + f * p1)*vth)/(c1 * f*k1*M1*p1*tauv))))
-# =============================================================================
-    return 1
+    inter_AP_times2 = diff(AP_times2)
+    if len(inter_AP_times2) < 2:
+        mean_inter_AP_time2 = nan
+        CVT22 = nan
+    else:
+        mean_inter_AP_time2 = mean(inter_AP_times2)
+        CVT22 = var(inter_AP_times2) / mean_inter_AP_time2**2
 
-def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
-    pi = get_pi(f, c1, k1, M1, p1, vth, tauv)
-    b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pi)
-    b2ss = p2*(k2*M2)/(k2 + f*p2*pi)
-    vat = (1 + pi)*c1*f*b1ss - c2*f*b2ss*pi
-    return tauv * np.log(1 / (1 - vth / (vat * tauv)))
-
-# =============================================================================
-# def get_CVT2(f, c1, c2, M1, M2, k1, k2, p1, p2, cp, Hp, pmin, tauv, vth):
-#     
-#     bMeanSS = (c1 * k1 * M1 * p1) / (k1 + f * p1) - (
-#         c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / ((1 + (cp * f)**Hp) * (k2 + f * p2))
-# 
-#     bSquaredMeanSS = -((c1**2 * k1 * M1 * (-1 + p1) * p1) / (k1 + f * p1)) - \
-#          ((c2**2 * k2 * M2 * (-1 + p2) * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2)) + \
-#          ((c1 * k1 * M1 * p1) / (k1 + f * p1) - (c2 * k2 * M2 * p2 * ((cp * f)**Hp + pmin)) / (k2 + f * p2))**2
-# 
-#     CVT2 = -((vth * (vth - 2 * f * tauv * bMeanSS) * bSquaredMeanSS) / (
-#         2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2))
-#     return CVT2
-# =============================================================================
-
-def get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, vth, tauv):
-    # Intermediate calculations
-    pi = get_pi(f, c1, k1, M1, p1, vth, tauv)
-
-    b1MeanSS = p1 * k1 * M1 / (f * p1 + k1)
-    b2MeanSS = p2 * k2 * M2 / (f * p2 + k2)
-
-    bMeanSS = c1 * p1 * k1 * M1 / (f * p1 + k1) - c2 * p2 * k2 * M2 / (f * p2 + k2) * pi
-
-    bVarianceSS = c1**2 * (1 - p1) * b1MeanSS + c2**2 * pi * (1 - p2) * b2MeanSS
-
-    bSquaredMeanSS = bVarianceSS + bMeanSS**2
-
-    # Main expression
-    numerator = vth * (-2 * f * tauv * vth * bMeanSS**2 + (-1 + 2 * f * tauv) * vth * bSquaredMeanSS + 2 * f * tauv * bMeanSS * bSquaredMeanSS)
-    denominator = 2 * f * tauv * bMeanSS**2 * (vth - f * tauv * bMeanSS)**2 * np.log(1 + vth / (-vth + f * tauv * bMeanSS))**2
-    result = numerator / denominator
-    
-    return result
-
-def get_equations(f, params):
-    
-    M1 = params['M1']
-    M2 = params['M2']
-
-    p1 = params['p1']
-    p2 = params['p2']
-    
-    c1 = params['c1']
-    c2 = params['c2']
-
-    k1 = params['k1']
-    k2 = params['k2']
-
-    tauv = params['tauv']
-    vth = params['vth']
-
-    T_mean = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth)
-
-# =============================================================================
-#     CVT2 = get_CVT2(f, c1, p1, k1, M1, c2, p2, k2, M2, cp, Hp, pmin, vth, tauv)
-# =============================================================================
-    
-    CVT2 = 1
-
-    return T_mean, CVT2
-
-def get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tauv, vth, delta_t):
-    params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
-                     p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1,
-                     k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
-    result = run_test(params)
-
-    mean_T_sim=result['mean_T']
-    CVT2_sim=result['CVT2']
-    pf_sim=1/(f*result['mean_T'])
-    
-# =============================================================================
-#     pf = get_pi(f, c1, k1, M1, p1, vth, tauv)
-# =============================================================================
-    params = to_dict(run_time = run_time, f = f, M1 = M1, M2 = M2,
-                     p1 = p1, p2 = p2, c1 = c1, c2 = c2, k1 = k1,
-                     k2 = k2, tauv = tauv, vth = vth, delta_t = delta_t)  
-    T_mean_eq_val, CVT2_eq_val = get_equations(f, params)
-    pf_eq=1/(f*T_mean_eq_val)
-
-    return mean_T_sim, T_mean_eq_val, CVT2_sim, CVT2_eq_val, pf_sim, pf_eq
+    return [mean_inter_AP_time3, CVT23, mean_inter_AP_time2, CVT22]
 
 def get_rval(ts):
-    tmax = np.max([x for x in ts if np.isnan(x) == False])
-    tlast = ts[-1]
-    rval = (tmax-tlast)/tmax
-    return rval
+    a = [x for x in ts if np.isnan(x) == False]
+    if len(a) == 0:
+        return nan
+    else:
+        tmax = np.max(a)
+        tlast = ts[-1]
+        rval = (tmax-tlast)/tmax
+        return rval
 
 ###############################################################################
 #
@@ -280,7 +164,7 @@ def get_rval(ts):
 
 #######################
 # Defaults
-run_time = 15
+run_time = 30
 
 p1 = 0.2 # 0.2
 p2 = 0.2 # 0.02
@@ -294,35 +178,37 @@ c2 = 0.01 # 0.01
 k1 = 1 # 1
 k2 = 100 # 10
 
-tauv = 1 # 1
-vth = 0.2 #0.2
+tau3 = 1 # 1
+vth3 = 0.2 #0.2
+tau2 = 1
+vth2 = 1
 delta_t = 0.01
 
 fmax=100
 flen=50
-fvals = np.linspace(0,fmax,flen)
+fvals = np.linspace(1,fmax,flen)
 
 # heatmap of pf for vth vs f
 xn='k1'
 xmin=1
-xmax=100
-xlen=10
+xmax=5
+xlen=20
 
 yn = 'k2'
 ymin=1
 ymax=100
-ylen=10
+ylen=20
 
 xs=np.linspace(xmin,xmax,xlen)
 ys=np.linspace(ymin,ymax,ylen)
 
-dt = []
-dc = []
+heatmap = np.zeros((xlen,ylen))
 for i, x in enumerate(xs): # modify here j, X <--
-    print(i/xlen)
+    print(i, ' of ', xlen)
 
     for j, y in enumerate(ys):
-        print('j', j/len(ys))
+        print('\r{:.2f}'.format(j/ylen), end='')
+        sys.stdout.flush()
         
         if xn == 'k1':
             k1 = x
@@ -363,58 +249,32 @@ for i, x in enumerate(xs): # modify here j, X <--
             c2 = x
         if yn == 'c2':
             c2 = y
-            
+
         if xn == 'tauv':
             tauv = x
         if yn == 'tauv':
             tauv = y
-        
+
         if xn == 'vth':
             vth = x
         if yn == 'vth':
             vth = y
-        
-        Tmeans = []
-        
-        for f in fvals:
-            data = get_stats(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tauv, vth, delta_t)
-            mean_T_sim, mean_T_eq, CVT2_sim, CVT2_eq, pf_sim, pf_eq = data
-            Tmeans.append(mean_T_sim)
-            
-        rtval = get_rval(Tmeans)
-        
-    dt.append(Tmeans)
-    dc.append(CVT2s)
-    
-    
 
-    
-    
-dtarr=np.array(dt)
-dfarr=1/np.array(dt)
+        t3list=[]
+        for f in fvals:
+            t3, c3, t2, c2 = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+            t3list.append(t3)
+        r3 = get_rval(1/array(t3list))
+        heatmap[i,j] = r3
+    print('')
+        
+        
+#%%
+plt.imshow(heatmap[:xlen,:ylen], origin='lower')
+plt.colorbar(cmap='viridis')
+plt.xlabel('k1')
+plt.ylabel('k2')
+plt.show()
             
 #%%
 
-# Assuming 'datasets', 'f_vals', and 'xs' are defined
-
-num_ticks = 5
-x_tick_locs = np.linspace(min(f_vals), max(f_vals), num_ticks)
-y_tick_locs = np.linspace(min(xs), max(xs), num_ticks)
-
-fontsize = 20
-
-plt.imshow(datasets, origin='lower', cmap='rainbow', aspect='auto', extent=(min(f_vals), max(f_vals), min(xs), max(xs)), vmin=0, vmax=1)
-colorbar = plt.colorbar(orientation='vertical')  # Use orientation='horizontal' for horizontal colorbar
-
-# Rotate colorbar label
-colorbar.set_label(f'postsynaptic firing probability', fontsize=fontsize, rotation=270, labelpad=30)  # Adjust rotation and labelpad accordingly
-colorbar.ax.tick_params(labelsize=fontsize)
-
-plt.xlabel(f'input frequency $f$, $Hz$', fontsize=fontsize)
-plt.ylabel(f'AP-firing threshold $vth$, $volts$', fontsize=fontsize)
-
-# Set the tick locations and labels
-plt.xticks(x_tick_locs, fontsize=fontsize)
-plt.yticks(y_tick_locs, fontsize=fontsize)
-
-plt.show()
