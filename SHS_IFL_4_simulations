@@ -1,15 +1,13 @@
-from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
 from numpy.random import exponential, binomial
+import sys
 
 import matplotlib.pyplot as plt
 
 def get_time_to(text, f, k1, M1, n1, k2, M2, n2):
     
     if text == 'f':
-        if f==0:
-            return inf
-        else:
-            return exponential(1./f)
+        return exponential(1./f)
     
     if text == 'n1':
         if M1 > n1:
@@ -28,10 +26,8 @@ def get_arg_typi(i):
     if i == 0:
         return 'f'
     if i == 1:
-        return 'pf'
-    if i == 2:
         return 'n1'
-    if i == 3:
+    if i == 2:
         return 'n2'
     else:
         return 'measure'
@@ -55,10 +51,6 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
     AP_times2 =  []
     AP_times3 = []
 
-# =============================================================================
-#     preneuron_firing_history = []
-# =============================================================================
-
     t_measure = delta_t
     
     while current_time < run_time:
@@ -71,13 +63,12 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
         times_array = [time_to_f, time_to_n1, time_to_n2, t_measure]
         t_min_arg = argmin(times_array)
         arg_typi = get_arg_typi(t_min_arg)
-        t_min = min(times_array)
+        t_min = times_array[t_min_arg]
 
         if arg_typi == 'f':
 
             b1 = binomial(n1, p1) # Number released
-            if (b1 > 0) and (n1 >= b1):
-                n1 -= b1
+            n1 -= b1
 
             vadd123 = c1*b1
                 
@@ -99,23 +90,22 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
                 if v3>vth3:
                     AP_times3.append([v3,current_time])
                     v3 = 0
+                    
                 
             else:
+                
                 v2_history.append([v2, current_time])                    
                 v3_history.append([v3, current_time])
                 if v3 > vth3:
                     AP_times3.append([v3, current_time])
                     v3 = 0
 
-
         elif arg_typi == 'n1':
             
             if n1 < M1:
                 n1 += 1
             
-            
         elif arg_typi == 'n2':
-            
             if n2 < M2:
                 n2 += 1            
         else:
@@ -139,7 +129,6 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
         mean_inter_AP_time3 = mean(inter_AP_times3)
         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
         
-        
     inter_AP_times2 = diff(AP_times2)
     if len(inter_AP_times2) < 2:
         mean_inter_AP_time2 = nan
@@ -148,23 +137,31 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
         mean_inter_AP_time2 = mean(inter_AP_times2)
         CVT22 = var(inter_AP_times2) / mean_inter_AP_time2**2
         
-        
     return [mean_inter_AP_time3, CVT23, mean_inter_AP_time2, CVT22]
+
+def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
+    t3=[]
+    i=0
+    for i in range(len(flist)):
+        print('\r{:.2f}'.format(i/nsamples), end='')
+        sys.stdout.flush()
+        results = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+        t3.append(results[0])
+    print('')
+
+    f3=1/array(t3)
+    return f3
+
+def get_rval(ts):
+    a = [x for x in ts if isnan(x) == False]
+    if len(a) == 0:
+        return nan
+    else:
+        tmax = max(a)
+        tlast = ts[-1]
+        rval = (tmax-tlast)/tmax
+        return rval
     
-# =============================================================================
-#     return {'vh3': v3_history,
-#             'vh2': v2_history,
-# # =============================================================================
-# #             'AP_times3':array(AP_times3),
-# #             'AP_times2':array(AP_times2),
-# # =============================================================================
-#             'T2':mean_inter_AP_time2, 
-#             'C2':CVT22,
-#             'T3':mean_inter_AP_time3, 
-#             'C3':CVT23}
-# =============================================================================
-
-
 ###############################################################################
 #
 #                               Main Code
@@ -173,7 +170,7 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
 # Test 1
 
 #######################
-run_time = 10
+run_time = 60
 
 p1 = 0.2 # 0.2
 p2 = 0.02 # 0.02
@@ -181,44 +178,69 @@ p2 = 0.02 # 0.02
 M1 = 100 # 100
 M2 = 100 # 100
 
-c1 = 0.01 # 0.01
-c2 = 0.001 # 0.01
+c1 = 0.001 # 0.01
+c2 = 0 # 0.01
 
-k1 = 1 # 1
+k1 = 5 # 1
 k2 = 10 # 10
 
-tau2 = 100
-tau3 = 100 # 1
-vth2 = 0.07
-vth3 = 0.3 #0.2
+tau2 = 1
+tau3 = 10 # 1
+vth2 = 0.2
+vth3 = 0.07 #0.2
 delta_t = 0.01
 
 fmax=100
 nsamples=100
 flist = linspace(0,fmax,nsamples)
 
-def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
-    t3,t2=[],[]
-    i=0
-    for i in range(len(flist)):
-        print(i/nsamples)
-        results = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-        t3.append(results[0])
-        t2.append(results[1])
-        
-    f3=1/array(t3)
-    f2=1/array(t2)
-    return f3, f2
-
-fs = []
-ntimes=20
-for i in range(ntimes):
-    f3, _ = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-    fs.append(f3)
-    
-fmean = mean(fs, axis = 0)
-
+f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
 plt.plot(flist, f3)
+
+
+
+# =============================================================================
+# xn,xmin,xmax,xlen='vth2',0.001,0.2,50
+# xs=linspace(xmin,xmax,xlen)
+# rvals=[]
+# for i,x in enumerate(xs):
+#     print(i, 'of', xlen)
+#     if xn == 'k1':
+#         k1 = x
+#     if xn == 'k2':
+#         k2 = x
+#     if xn == 'p1':
+#         p1 = x
+#     if xn == 'p2':
+#         p2 = x
+#     if xn == 'M1':
+#         M1 = x
+#     if xn == 'M2':
+#         M2 = x
+#     if xn == 'c1':
+#         c1 = x
+#     if xn == 'c2':
+#         c2 = x
+#     if xn == 'tau3':
+#         tauv = x
+#     if xn == 'tau2':
+#         tauv = x
+#     if xn == 'vth3':
+#         vth = x
+#     if xn == 'vth2':
+#         vth = x
+#     f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+#     rval = get_rval(f3)
+#     rvals.append(rval)
+# =============================================================================
+
+
+#%%
+fontsize=20
+plt.plot(xs, rvals, label='r-value')
+plt.xlabel('{}'.format(xn), fontsize=fontsize)
+plt.ylabel(f'band-pass \ndrop percentage', fontsize=fontsize)
+plt.tick_params(axis='both', labelsize = fontsize)
 plt.show()
  
 
