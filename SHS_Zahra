@@ -1,0 +1,105 @@
+#One step model
+
+import numpy as np
+import math
+import statistics as st
+import matplotlib.pyplot as plt
+
+tlist=[]
+clist=[]
+flist=np.linspace(1,100,100)
+for f in flist:
+
+    M=100
+    k=5
+
+    pr=0.2
+    n_run=1 # Number of runs for error bars or averaging
+    t_end=15
+#     f=50
+    E=[] # empty vesicles
+
+    time=[] # holds the time indices
+    E.append(5) #Start with 5
+    time.append(0) #starting with 0
+    ###
+    tcont=[]  # list
+    tcont.append(0)
+    AP_time=[]
+    refill_time=[]
+    b=[]
+    E2=[]
+    E2.append(0)
+    ni=[]
+  
+    v0=0 # initial voltage
+    voltage=[] # membrane potential
+    voltage.append(v0)
+    kv=.001 # kv=c
+    vth=.07
+    T_star=[] # FPT
+    tc=[] # DONT KNOW
+    tc.append(0)
+    tv=10
+
+    while (time[-1]<t_end):
+        a1=k*E[-1] # k(M-n)
+        AP_time.append(np.random.exponential(1/f))#poisson arrival of APs
+        refill_time.append(np.random.exponential(1/(a1+10**(-10)))) # time interval between two APs, added 10-10 for nonzero
+        if AP_time[-1]<=refill_time[-1]: # if firing time less than refilling
+            ni_1=M-E[-1]
+            ni.append(ni_1)
+
+            b.append(np.random.binomial(ni[-1],pr))
+            voltage.append(voltage[-1]+kv*b[-1])
+            if voltage[-1]>=vth:
+                voltage.append(v0)
+                tc.append(tc[-1]+AP_time[-1])
+                T_star.append(tc[-1])
+                tc.append(0)
+            else: 
+                tc.append(tc[-1]+AP_time[-1])
+            E.append(E[-1]+b[-1]) 
+            tcont.append(tcont[-1]+AP_time[-1])
+            time.append(time[-1]+AP_time[-1])
+        elif AP_time[-1]>refill_time[-1]:
+            tcont.append(time[-1]+refill_time[-1])
+            E2.append(E[-1])
+            while tcont[-1]<(time[-1]+AP_time[-1]):
+                E2.append(E2[-1]-1)
+                a1=k*E2[-1]
+                tcont.append(tcont[-1]+np.random.exponential(1/(a1+10**(-10))))
+            E.append(E2[-1])
+            ni_1=M-(E[-1])
+            ni.append(ni_1)
+            b.append(np.random.binomial(ni[-1],pr))
+            voltage.append(math.exp(-AP_time[-1]/tv)*voltage[-1]+kv*b[-1]);
+            if voltage[-1]>= vth:
+                voltage.append(v0)
+                tc.append(tc[-1]+AP_time[-1])
+                T_star.append(tc[-1])
+                tc.append(0)
+            else: 
+                tc.append(tc[-1]+AP_time[-1])
+            E.append(E[-1]+b[-1]) 
+            tt=time[-1]+AP_time[-1]
+            time.append(tt)
+
+    T_star_1=np.asarray(T_star[len(T_star)-10001:len(T_star)-1])
+    meanofTstar=T_star_1.mean()
+    varianceofTstar=T_star_1.var()
+    CV2_Tstar=varianceofTstar/meanofTstar**2
+    tlist.append(meanofTstar)
+
+def get_rval(ts):
+    a = [x for x in ts if np.isnan(x) == False]
+    if len(a) == 0:
+        return np.nan
+    else:
+        tmax = max(a)
+        tlast = ts[-1]
+        rval = (tmax-tlast)/tmax
+        return rval
+
+r=get_rval(1/np.array(tlist))
+plt.plot(flist,1/np.array(tlist))
