@@ -1,6 +1,7 @@
 from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
 from numpy.random import exponential, binomial
 import sys
+import cProfile
 
 import matplotlib.pyplot as plt
 
@@ -11,13 +12,13 @@ def get_time_to(text, f, k1, M1, n1, k2, M2, n2):
     
     if text == 'n1':
         if M1 > n1:
-            return exponential(1./(k1*(M1-n1)))
+            return exponential(1./(k1*(M1-n1)+1e-10))
         else:
             return inf
         
     if text == 'n2':
         if M2 > n2:
-            return exponential(1./(k2*(M2-n2)))
+            return exponential(1./(k2*(M2-n2))+1e-10)
         else:
             return inf
         
@@ -55,6 +56,10 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
     
     while current_time < run_time:
         
+        tarr=[exponential(1./f),
+         exponential(1./(k1*(M1-n1)+1e-10)),
+         exponential(1./(k2*(M2-n2)+1e-10))]
+        
         time_to_f = get_time_to('f', f, k1, M1, n1, k2, M2, n2) # next reaction time
         time_to_n1 = get_time_to('n1', f, k1, M1, n1, k2, M2, n2)
         time_to_n2 = get_time_to('n2', f, k1, M1, n1, k2, M2, n2)
@@ -78,26 +83,24 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
             if v2 >= vth2:
                 
                 b2 = binomial(n2, p2) # Number released
-                if (b2 > 0) and (n2 >= b2):
-                    n2 -= b2          
+                n2 -= b2          
                 vadd23 = c2*b2
                 v3 -= vadd23
                 v2_history.append([v2, current_time])   
                 v3_history.append([v3, current_time])
                  
-                AP_times2.append([v2,current_time])
+                AP_times2.append(current_time)
                 v2 = 0
                 if v3>vth3:
-                    AP_times3.append([v3,current_time])
+                    AP_times3.append(current_time)
                     v3 = 0
-                    
-                
+                                  
             else:
                 
                 v2_history.append([v2, current_time])                    
                 v3_history.append([v3, current_time])
                 if v3 > vth3:
-                    AP_times3.append([v3, current_time])
+                    AP_times3.append(current_time)
                     v3 = 0
 
         elif arg_typi == 'n1':
@@ -119,7 +122,6 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
         t_measure -= t_min   
         if t_measure == 0:
             t_measure = delta_t
-            
             
     inter_AP_times3 = diff(AP_times3)
     if len(inter_AP_times3) < 2:
@@ -143,11 +145,15 @@ def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vt
     t3=[]
     i=0
     for i in range(len(flist)):
-        print('\r{:.2f}'.format(i/nsamples), end='')
-        sys.stdout.flush()
+# =============================================================================
+#         print('\r{:.2f}'.format(i/nsamples), end='')
+#         sys.stdout.flush()
+# =============================================================================
         results = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
         t3.append(results[0])
-    print('')
+# =============================================================================
+#     print('')
+# =============================================================================
 
     f3=1/array(t3)
     return f3
@@ -170,72 +176,71 @@ def get_rval(ts):
 # Test 1
 
 #######################
-run_time = 60
+run_time = 30
 
 p1 = 0.2 # 0.2
-p2 = 0.02 # 0.02
+p2 = 0.11 # 0.02
 
-M1 = 100 # 100
+M1 = 75 # 100
 M2 = 100 # 100
 
-c1 = 0.001 # 0.01
-c2 = 0 # 0.01
+c1 = 0.01 # 0.01
+c2 = 0.02 # 0.01
 
-k1 = 5 # 1
-k2 = 10 # 10
+k1 = 1 # 1
+k2 = 100 # 10
 
 tau2 = 1
-tau3 = 10 # 1
+tau3 = 1 # 1
 vth2 = 0.2
-vth3 = 0.07 #0.2
+vth3 = 0.2 #0.2
 delta_t = 0.01
 
-fmax=100
+fmax=200
 nsamples=100
 flist = linspace(0,fmax,nsamples)
 
-f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-plt.plot(flist, f3)
-
-
-
 # =============================================================================
-# xn,xmin,xmax,xlen='vth2',0.001,0.2,50
-# xs=linspace(xmin,xmax,xlen)
-# rvals=[]
-# for i,x in enumerate(xs):
-#     print(i, 'of', xlen)
-#     if xn == 'k1':
-#         k1 = x
-#     if xn == 'k2':
-#         k2 = x
-#     if xn == 'p1':
-#         p1 = x
-#     if xn == 'p2':
-#         p2 = x
-#     if xn == 'M1':
-#         M1 = x
-#     if xn == 'M2':
-#         M2 = x
-#     if xn == 'c1':
-#         c1 = x
-#     if xn == 'c2':
-#         c2 = x
-#     if xn == 'tau3':
-#         tauv = x
-#     if xn == 'tau2':
-#         tauv = x
-#     if xn == 'vth3':
-#         vth = x
-#     if xn == 'vth2':
-#         vth = x
-#     f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-#     rval = get_rval(f3)
-#     rvals.append(rval)
+# f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+# r = get_rval(f3)
+# 
+# plt.plot(flist, f3)
 # =============================================================================
 
+xn,xmin,xmax,xlen='k1',1,20,30
+xs=linspace(xmin,xmax,xlen)
+rvals=[]
+for i,x in enumerate(xs):
+    print(i, 'of', xlen)
+    if xn == 'k1':
+        k1 = x
+    if xn == 'k2':
+        k2 = x
+    if xn == 'p1':
+        p1 = x
+    if xn == 'p2':
+        p2 = x
+    if xn == 'M1':
+        M1 = x
+    if xn == 'M2':
+        M2 = x
+    if xn == 'c1':
+        c1 = x
+    if xn == 'c2':
+        c2 = x
+    if xn == 'tau3':
+        tauv = x
+    if xn == 'tau2':
+        tauv = x
+    if xn == 'vth3':
+        vth = x
+    if xn == 'vth2':
+        vth = x
+    f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+    rval = get_rval(f3)
+    rvals.append(rval)
 
-#%%
+
 fontsize=20
 plt.plot(xs, rvals, label='r-value')
 plt.xlabel('{}'.format(xn), fontsize=fontsize)
@@ -243,5 +248,4 @@ plt.ylabel(f'band-pass \ndrop percentage', fontsize=fontsize)
 plt.tick_params(axis='both', labelsize = fontsize)
 plt.show()
  
-
 
