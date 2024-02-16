@@ -164,13 +164,13 @@ def get_rval(ts):
 
 #######################
 # Defaults
-run_time = 30
+run_time = 15
 
 p1 = 0.2 # 0.2
-p2 = 0.2 # 0.02
+p2 = 0.02 # 0.02
 
-M1 = 50 # 100
-M2 = 50 # 100
+M1 = 100 # 100
+M2 = 100 # 100
 
 c1 = 0.01 # 0.01
 c2 = 0.01 # 0.01
@@ -181,7 +181,7 @@ k2 = 100 # 10
 tau3 = 1 # 1
 vth3 = 0.2 #0.2
 tau2 = 1
-vth2 = 1
+vth2 = 0.2
 delta_t = 0.01
 
 fmax=100
@@ -191,8 +191,8 @@ fvals = np.linspace(1,fmax,flen)
 # heatmap of pf for vth vs f
 xn='k1'
 yn = 'k2'
-xmin,xmax,xlen=1,5,50
-ymin,ymax,ylen=1,100,50
+xn,xmin,xmax,xlen='k1',1,5,25
+yn,ymin,ymax,ylen='k2',1,100,25
 
 xs=np.linspace(xmin,xmax,xlen)
 ys=np.linspace(ymin,ymax,ylen)
