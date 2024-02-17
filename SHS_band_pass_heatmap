@@ -226,8 +226,8 @@ flist = linspace(0,fmax,nsamples)
 # heatmap of pf for vth vs f
 xn='p1'
 yn = 'p2'
-xn,xmin,xmax,xlen='k1',0.001,1,25
-yn,ymin,ymax,ylen='k2',0.001,1,25
+xn,xmin,xmax,xlen='k1',1,20,25
+yn,ymin,ymax,ylen='k2',1,20,25
 
 xs=linspace(xmin,xmax,xlen)
 ys=linspace(ymin,ymax,ylen)
@@ -306,7 +306,8 @@ plt.title('Percentage drop from peak firing frequency at $500$ $Hz$', fontsize=f
 plt.colorbar()
 plt.xlabel('refliing rate k1', fontsize = fontsize)
 plt.ylabel('refilling rate k2', fontsize = fontsize)
-
+plt.xticks(xs)
+plt.yticks(ys)
 plt.tight_layout()
 plt.show()
             
