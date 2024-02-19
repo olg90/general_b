@@ -1,4 +1,4 @@
-from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
+from numpy import inf, argmin,arange, array, exp, var, nan, mean, diff, log, linspace, isnan
 from numpy.random import exponential, binomial
 
 import matplotlib.pyplot as plt
@@ -64,6 +64,7 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
             t_min=t1
             if n1 < M1:
                 n1+=1
+                
         elif t2<t0 and t2<t1:
             t_min=t2
             if n2 < M2:
@@ -108,9 +109,7 @@ def get_rval(ts):
     if len(a) == 0:
         return nan
     else:
-        tmax = max(a)
-        tlast = ts[-1]
-        rval = (tmax-a[-1])/(tmax-a[0])
+        rval = 1-a[-1]/max(a)
         return rval
 
 def rtest(xn, xs, p1, p2, M1,M2,c1,c2,k1,k2,tau2,tau3,vth2,vth3,delta_t,fmax,nsamples):
@@ -157,8 +156,8 @@ def rtest(xn, xs, p1, p2, M1,M2,c1,c2,k1,k2,tau2,tau3,vth2,vth3,delta_t,fmax,nsa
 #######################
 run_time = 15
 
-p1 = 0.2 # 0.2
-p2 = 0.1 # 0.02
+p1 = 1 # 0.2
+p2 = 1 # 0.02
 
 M1 = 100 # 100
 M2 = 100 # 100
@@ -166,7 +165,7 @@ M2 = 100 # 100
 c1 = 0.001 # 0.01
 c2 = 0.002 # 0.01
 
-k1 = 10 # 1
+k1 = 100 # 1
 k2 = 100 # 10
 
 tau2 = 1
@@ -176,16 +175,21 @@ vth3 = 0.2 #0.2
 delta_t = 0.01
 
 fmax=500
-nsamples=100
+nsamples=50
 flist = linspace(0,fmax,nsamples)
 
-f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-r = get_rval(f3)
-plt.plot(flist, f3)
-#%%
+# =============================================================================
+# f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+# r = get_rval(f3)
+# plt.plot(flist, f3)
+# =============================================================================
 
-yn, ylist='vth3', [0.2]
-xn,xmin,xmax,xlen='vth2',0.01, 0.02,25
+yn, ylist='c1', [0.001]
+xn,xmin,xmax,xlen='c2', 0, 0.01, 25
+
+# =============================================================================
+# xs=arange(xmin,xmax,int(100/xlen))
+# =============================================================================
 
 rlist = []
 xs=linspace(xmin,xmax,xlen)
@@ -209,24 +213,23 @@ for y in ylist:
     if yn == 'c2':
         c2 = y
     if yn == 'tau3':
-        tauv = y
+        tau3 = y
     if yn == 'tau2':
-        tauv = y
+        tau2 = y
     if yn == 'vth3':
-        vth = y
+        vth3 = y
     if yn == 'vth2':
-        vth = y
+        vth2 = y
     rlist.append(rtest(xn, xs, p1, p2, M1, M2, c1, c2, k1, k2, tau2, 
                        tau3, vth2, vth3, delta_t, fmax, nsamples))
-    
+
 fontsize = 20
 plt.figure()
 plt.ylabel('band-pass \ndrop percentage', fontsize=fontsize)
 for i in range(len(rlist)):
     plt.plot(xs,rlist[i], label='{}={}'.format(yn, ylist[i]))
     
-plt.xlim([xs[0], xs[-1]])
-plt.ylim([0,1])
+
 plt.xlabel(xn)
 plt.legend(loc='upper right')
 plt.show()
