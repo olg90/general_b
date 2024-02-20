@@ -1,7 +1,6 @@
-from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log,around, linspace, isnan, zeros, arange
 from numpy.random import exponential, binomial
 import sys
-import cProfile
 
 import matplotlib.pyplot as plt
 
@@ -20,143 +19,56 @@ def to_dict(**x):
     return x
 
 def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
-
     current_time = 0
-
-    v2 = [0]
-    v3 = [0]
-
-    n1 = [0]
-    n2 = [0]
-
-# =============================================================================
-#     v2_history = [0] # data array
-#     v3_history = [0] # data array
-# =============================================================================
-    
-# =============================================================================
-#     AP_times2 =  []
-# =============================================================================
+    v2 = 0
+    v3 = 0
+    n1 = 0
+    n2 = 0
     AP_times3 = []
-    
-# =============================================================================
-#     t2=[0]
-#     t3=[0]
-# =============================================================================
-
     t_measure = delta_t
-    
     while current_time < run_time:
-        
-        #Take min of times array
-        times_array=[exponential(1./f),
-         exponential(1./(k1*(M1-n1[-1])+1e-10)),
-         exponential(1./(k2*(M2-n2[-1])+1e-10))]
-        
-        t0=times_array[0]
-        t1=times_array[1]
-        t2=times_array[2]
-
+        t0=exponential(1./f)
+        t1=exponential(1./(k1*(M1-n1)+1e-10))
+        t2=exponential(1./(k2*(M2-n2)+1e-10))
         if t0<t1 and t0<t2:
             t_min=t0
-            arg_typi='f'
+            b1 = binomial(n1, p1) # Number released
+            n1-=b1
+            v3+=c1*b1
+            v2+=c1*b1
+            if v2 >= vth2:
+                b2 = binomial(n2, p2) # Number released
+                n2-=b2         
+                v3-= c2*b2
+                v2 = 0
+            if v3>vth3:
+                AP_times3.append(current_time)
+                v3 = 0
         elif t1<t0 and t1<t2:
             t_min=t1
-            arg_typi='n1'
-        else:
+            if n1 < M1:
+                n1+=1
+        elif t2<t0 and t2<t1:
             t_min=t2
-            arg_typi='n2'
-        
-# =============================================================================
-#         t_min_arg = argmin(times_array)
-#         arg_typi = get_arg_typi(t_min_arg)
-#         t_min = times_array[t_min_arg]
-# =============================================================================
-
-        if arg_typi == 'f':
-
-            b1 = binomial(n1[-1], p1) # Number released
-            n1.append(n1[-1]-b1)
-            v3.append(v3[-1]+c1*b1)
-            v2.append(v2[-1]+c1*b1)
-
-            if v2[-1] >= vth2:
-                
-                b2 = binomial(n2[-1], p2) # Number released
-                n2.append(n2[-1]-b2)         
-                v3[-1] -= c2*b2
-# =============================================================================
-#                 v2_history.append(v2)  
-#                 v3_history.append(v3)
-#                 t2.append(current_time)
-#                 t3.append(current_time)
-# =============================================================================
-# =============================================================================
-#                 AP_times2.append(current_time)
-# =============================================================================
-                v2[-1] = 0
-                if v3[-1]>vth3:
-                    AP_times3.append(current_time)
-                    v3[-1] = 0
-
-            else:
-
-# =============================================================================
-#                 v2_history.append(v2)  
-#                 v3_history.append(v3)
-#                 t2.append(current_time)
-#                 t3.append(current_time)
-# =============================================================================
-                
-                if v3[-1] > vth3:
-                    AP_times3.append(current_time)
-                    v3[-1] = 0
-
-        elif arg_typi == 'n1':
-
-            if n1[-1] < M1:
-                n1.append(n1[-1]+1)
-
-        elif arg_typi == 'n2':
-            if n2[-1] < M2:
-                n2.append(n2[-1]+1)            
+            if n2 < M2:
+                n2+=1          
         else:
-            v3.append(v3[-1]*exp(-t_min/tau3))
-            v2.append(v2[-1]*exp(-t_min/tau2))
-# =============================================================================
-#             v3_history.append(v3)
-#             v2_history.append(v2)  
-#             t2.append(current_time)
-#             t3.append(current_time)
-# =============================================================================
-
+            v3*=exp(-t_min/tau3)
+            v2*=exp(-t_min/tau2)
         current_time += t_min
         t_measure -= t_min   
         if t_measure == 0:
             t_measure = delta_t
-
-    inter_AP_times3 = diff(AP_times3)
-    if len(inter_AP_times3) < 2:
-        mean_inter_AP_time3 = nan
-        CVT23 = nan
-    else:
-        mean_inter_AP_time3 = mean(inter_AP_times3)
-        CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
-        
 # =============================================================================
-#     inter_AP_times2 = diff(AP_times2)
-#     if len(inter_AP_times2) < 2:
-#         mean_inter_AP_time2 = nan
-#         CVT22 = nan
+#     if len(inter_AP_times3) < 2:
+#         mean_inter_AP_time3 = nan
+#         CVT23 = nan
 #     else:
-#         mean_inter_AP_time2 = mean(inter_AP_times2)
-#         CVT22 = var(inter_AP_times2) / mean_inter_AP_time2**2
+#         mean_inter_AP_time3 = mean(inter_AP_times3)
+#         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
+#     return [mean_inter_AP_time3, CVT23]
 # =============================================================================
-        
-# =============================================================================
-#     return [mean_inter_AP_time3, CVT23, mean_inter_AP_time2, CVT22]
-# =============================================================================
-    return [mean_inter_AP_time3, CVT23]
+    return mean(diff(AP_times3)[int(0.3*(len(AP_times3)-1)):])
 
 def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
     t3=[]
@@ -180,10 +92,9 @@ def get_rval(ts):
     if len(a) == 0:
         return nan
     else:
-        tmax = max(a)
-        tlast = ts[-1]
-        rval = (tmax-tlast)/tmax
+        rval = 1-a[-1]/max(a)
         return rval
+
 
 ###############################################################################
 #
@@ -219,21 +130,20 @@ vth3 = 0.2 #0.2
 delta_t = 0.01
 
 fmax=500
-nsamples=200
+nsamples=50
 flist = linspace(0,fmax,nsamples)
 
 
 # heatmap of pf for vth vs f
-xn='p1'
-yn = 'p2'
-xn,xmin,xmax,xlen='k1',1,20,25
-yn,ymin,ymax,ylen='k2',1,20,25
+
+xn,xmin,xmax,xlen='c1', 0.001, 0.01, 25
+yn,ymin,ymax,ylen='c2', 0.001, 0.02, 25
 
 xs=linspace(xmin,xmax,xlen)
 ys=linspace(ymin,ymax,ylen)
 
 heatmap = zeros((xlen,ylen))
-for i, x in enumerate(xs): # modify here j, X <--
+for i, x in enumerate(xs): 
     print(i, ' of ', xlen)
 
     for j, y in enumerate(ys):
@@ -280,35 +190,48 @@ for i, x in enumerate(xs): # modify here j, X <--
         if yn == 'c2':
             c2 = y
 
-        if xn == 'tauv':
-            tauv = x
-        if yn == 'tauv':
-            tauv = y
+        if xn == 'tau3':
+            tau3 = x
+        if yn == 'tau3':
+            tau3 = y
+            
+        if xn == 'tau2':
+            tau2 = x
+        if yn == 'tau2':
+            tau2 = y
 
-        if xn == 'vth':
-            vth = x
-        if yn == 'vth':
-            vth = y
+        if xn == 'vth3':
+            vth3 = x
+        if yn == 'vth3':
+            vth3 = y
+            
+        if xn == 'vth2':
+            vth2 = x
+        if yn == 'vth2':
+            vth2 = y
 
         t3list=[]
         for f in flist:
-            t3, c3 = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+            t3 = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
             t3list.append(t3)
         r3 = get_rval(1/array(t3list))
         heatmap[i,j] = r3
     print('')
-        
-        
-#%%
+    
+    #%%
 fontsize = 20
-plt.imshow(heatmap, origin='lower', cmap='viridis')
-plt.title('Percentage drop from peak firing frequency at $500$ $Hz$', fontsize=fontsize)
-plt.colorbar()
-plt.xlabel('refliing rate k1', fontsize = fontsize)
-plt.ylabel('refilling rate k2', fontsize = fontsize)
-plt.xticks(xs)
-plt.yticks(ys)
-plt.tight_layout()
+plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
+           extent=[xmin,xmax,ymin,ymax], 
+           aspect='auto',
+           vmin=0, vmax=1)
+cbar = plt.colorbar()
+cbar_label = 'Percentage drop from peak\n firing frequency at $500$ $Hz$'
+cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
+cbar.ax.tick_params(labelsize=fontsize)
+
+plt.xlabel('{}'.format(xn), fontsize = fontsize)
+plt.ylabel('{}'.format(yn), fontsize = fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
 plt.show()
             
-
+            
