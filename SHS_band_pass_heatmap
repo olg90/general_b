@@ -1,6 +1,7 @@
-from numpy import inf, argmin, array, exp, var, nan, mean, diff, log,around, linspace, isnan, zeros, arange
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
 from numpy.random import exponential, binomial
 import sys
+import cProfile
 
 import matplotlib.pyplot as plt
 
@@ -48,6 +49,7 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
             t_min=t1
             if n1 < M1:
                 n1+=1
+
         elif t2<t0 and t2<t1:
             t_min=t2
             if n2 < M2:
@@ -68,7 +70,7 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
 #         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
 #     return [mean_inter_AP_time3, CVT23]
 # =============================================================================
-    return mean(diff(AP_times3)[int(0.3*(len(AP_times3)-1)):])
+    return mean(diff(AP_times3)[int(0.4*(len(AP_times3)-1)):])
 
 def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
     t3=[]
@@ -92,9 +94,20 @@ def get_rval(ts):
     if len(a) == 0:
         return nan
     else:
-        rval = 1-a[-1]/max(a)
+        tmax = max(a)
+        tlast = ts[-1]
+        rval = (tmax-tlast)/tmax
         return rval
+    
+def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
+    pi = get_pi(f, c1, k1, M1, p1, vth2, tau2)
+    b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pi)
+    b2ss = p2*(k2*M2)/(k2 + f*p2*pi)
+    vat = (1 + pi)*c1*f*b1ss - c2*f*b2ss*pi
+    return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
 
+def get_pi(f, c1, k1, M1, p1, vth2, tau2):
+    return tau2 * log(1/(1-(((k1 + f * p1)*vth2)/(c1 * f*k1*M1*p1*tau2))))    
 
 ###############################################################################
 #
@@ -106,10 +119,8 @@ def get_rval(ts):
 #######################
 # Defaults
 
-
-
 #
-run_time = 15
+run_time = 60
 
 p1 = 0.2 # 0.2
 p2 = 0.11 # 0.02
@@ -130,20 +141,20 @@ vth3 = 0.2 #0.2
 delta_t = 0.01
 
 fmax=500
-nsamples=50
+nsamples=100
 flist = linspace(0,fmax,nsamples)
-
 
 # heatmap of pf for vth vs f
 
-xn,xmin,xmax,xlen='c1', 0.001, 0.01, 25
-yn,ymin,ymax,ylen='c2', 0.001, 0.02, 25
+# Simulations
+xn,xmin,xmax,xlen='k1',1,20,25
+yn,ymin,ymax,ylen='k2',1,20,25
 
 xs=linspace(xmin,xmax,xlen)
 ys=linspace(ymin,ymax,ylen)
 
 heatmap = zeros((xlen,ylen))
-for i, x in enumerate(xs): 
+for i, x in enumerate(xs): # modify here j, X <--
     print(i, ' of ', xlen)
 
     for j, y in enumerate(ys):
@@ -159,12 +170,12 @@ for i, x in enumerate(xs):
             k2 = x
         if yn == 'k2':
             k2 = y
-        
+
         if xn == 'p1':
             p1 = x
         if yn == 'p1':
             p1 = y
-        
+
         if xn == 'p2':
             p2 = x
         if yn == 'p2':
@@ -191,24 +202,14 @@ for i, x in enumerate(xs):
             c2 = y
 
         if xn == 'tau3':
-            tau3 = x
-        if yn == 'tau3':
-            tau3 = y
-            
-        if xn == 'tau2':
-            tau2 = x
+            tauv = x
         if yn == 'tau2':
-            tau2 = y
+            tauv = y
 
-        if xn == 'vth3':
-            vth3 = x
-        if yn == 'vth3':
-            vth3 = y
-            
-        if xn == 'vth2':
-            vth2 = x
-        if yn == 'vth2':
-            vth2 = y
+        if xn == 'vth':
+            vth = x
+        if yn == 'vth':
+            vth = y
 
         t3list=[]
         for f in flist:
@@ -217,10 +218,92 @@ for i, x in enumerate(xs):
         r3 = get_rval(1/array(t3list))
         heatmap[i,j] = r3
     print('')
-    
-    #%%
+
+
+
+# equation 
+heatmapeq = zeros((xlen,ylen))
+for i, x in enumerate(xs): # modify here j, X <--
+    print(i, ' of ', xlen)
+
+    for j, y in enumerate(ys):
+        print('\r{:.2f}'.format(j/ylen), end='')
+        sys.stdout.flush()
+        
+        if xn == 'k1':
+            k1 = x
+        if yn == 'k1':
+            k1 = y
+        
+        if xn == 'k2':
+            k2 = x
+        if yn == 'k2':
+            k2 = y
+
+        if xn == 'p1':
+            p1 = x
+        if yn == 'p1':
+            p1 = y
+
+        if xn == 'p2':
+            p2 = x
+        if yn == 'p2':
+            p2 = y
+        
+        if xn == 'M1':
+            M1 = x
+        if yn == 'M1':
+            M1 = y
+        
+        if xn == 'M2':
+            M2 = x
+        if yn == 'M2':
+            M2 = y
+        
+        if xn == 'c1':
+            c1 = x
+        if yn == 'c1':
+            c1 = y
+        
+        if xn == 'c2':
+            c2 = x
+        if yn == 'c2':
+            c2 = y
+
+        if xn == 'tau3':
+            tauv = x
+        if yn == 'tau2':
+            tauv = y
+
+        if xn == 'vth':
+            vth = x
+        if yn == 'vth':
+            vth = y
+
+        t3list=[]
+        for f in flist:
+            t3 = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2)
+            t3list.append(t3)
+        r3 = get_rval(1/array(t3list))
+        heatmapeq[i,j] = r3
+    print('')    
+
+
+# plot the data
+
 fontsize = 20
+plt.subplot(1,2,1)
 plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
+           extent=[xmin,xmax,ymin,ymax], 
+           aspect='auto',
+           vmin=0, vmax=1)
+
+plt.xlabel('refilling rate k1', fontsize = fontsize)
+plt.ylabel('refilling rate k2', fontsize = fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
+
+plt.subplot(1,2,2)
+plt.imshow(heatmapeq.T, origin='lower', cmap='viridis', 
            extent=[xmin,xmax,ymin,ymax], 
            aspect='auto',
            vmin=0, vmax=1)
@@ -229,9 +312,8 @@ cbar_label = 'Percentage drop from peak\n firing frequency at $500$ $Hz$'
 cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
 cbar.ax.tick_params(labelsize=fontsize)
 
-plt.xlabel('{}'.format(xn), fontsize = fontsize)
-plt.ylabel('{}'.format(yn), fontsize = fontsize)
+plt.xlabel('refilling rate k1', fontsize = fontsize)
+plt.ylabel('refilling rate k2', fontsize = fontsize)
 plt.tick_params(axis='both', labelsize=fontsize)
+
 plt.show()
-            
-            
