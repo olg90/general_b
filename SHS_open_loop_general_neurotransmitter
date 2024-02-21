@@ -5,40 +5,14 @@ from scipy.stats import bayes_mvs as bayesest
 from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
 from numpy.random import exponential, binomial
 
-def get_time_to(text, f, ku, Mu, nu):
-    
-    if text == 'f':
-        return np.random.exponential(1./f)
-    
-    if text == 'nu':
-        if Mu > nu:
-            return np.random.exponential(1./(ku*(Mu-nu)))
-        else:
-            return np.inf
-        
-    
-def get_hill(f, x0, x1, Hx, cx):
-    return (x1*(f/cx)**Hx+x0)/(1+(f/cx)**Hx)
     
 
-def get_arg_type(i):
-    
-    if i == 0:
-        return 'f'
-    if i == 1:
-        return 'nu'
-    if i == 2:
-        return 'measure'
-
-def to_dict(**x):
-    return x
-
-def run_test(f, run_time, c, M, k, pr, tau, vth, delta_t, Hx, cx, x0, x1, xname):
+def run_test(f, run_time, c, M, k, pr, d, h, m, tau, vth, delta_t):
        
     current_time = 0
     v = 0
     n = 0
-
+    z=0
     AP_times = []
     t_measure = delta_t
     while current_time < run_time:
@@ -47,8 +21,9 @@ def run_test(f, run_time, c, M, k, pr, tau, vth, delta_t, Hx, cx, x0, x1, xname)
         if t0<t1:
             t_min=t0
             b = binomial(n, pr) # Number released
-            n-=b
             v+=c*b
+            n-=b
+            z+=m*b
             if v>vth:
                 AP_times.append(current_time)
                 v = 0
@@ -57,9 +32,12 @@ def run_test(f, run_time, c, M, k, pr, tau, vth, delta_t, Hx, cx, x0, x1, xname)
             if n < M:
                 n+=1
         else:
-            v*=exp(-t_min/tau)
+            #--------------------------------------
+            v = (exp(-t_min*(d+1/tauv))*(-exp(t_min/tauv)*h*tau_v*z0+exp(d*t_min)*((-1+d*tauv)*v0+h*tauv*z0)))/(-1+d*tauv)
+            z*=exp(-t_min*d)
+            #--------------------------------------
         current_time += t_min
-        t_measure -= t_min   
+        t_measure -= t_min
         if t_measure == 0:
             t_measure = delta_t
     if len(AP_times) < 2:
@@ -117,26 +95,12 @@ def get_CVT2(f, k, M, pr, tauv, vth, c):
         (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
 
     result = numerator / denominator
-
     return result
 
-def get_equations(f, run_time, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname):
-    
-
-    if xname == 'k':
-        k = get_hill(f, x0, x1, Hx, cx)
-    if xname == 'pr':
-        pr = get_hill(f, x0, x1, Hx, cx)
-    if xname == 'M':
-        M = get_hill(f, x0, x1, Hx, cx)
-    if xname == 'c':
-        c = get_hill(f, x0, x1, Hx, cx)
-    
-    T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
-    CVT2 = get_CVT2(f, k, M, pr, tauv, vth, c)
-    
-
-    return T_mean, CVT2
+def get_equations(f, c, M, k, pr, d, h, m, tauv, vth):
+    Tmean=tauv*log(1/(1-(d*(k+f*pr)*vth)/(f*k*(c*d+h*m)*M*pr*tauv)))
+    CVT2=1
+    return Tmean, CVT2
 
 ###############################################################################
 #
@@ -153,70 +117,15 @@ f_val_list = np.linspace(fmin,fmax, n_samples)
 
 run_time = 15
 
-##########################
-#Defaults, must be defined
-M = 100
-pr = 0.3
 c = 0.015
+M = 100
 k = 100
+pr = 0.3
+d=1
+h=1
+m=1000
 tauv = 1
 vth = 0.2
-##########################
-
-# =============================================================================
-# xname = 'M'
-# pr = 0.2
-# c = 0.01 # 0.01
-# k = 50 # 50
-# tauv = 1.9 # 10, 4.5, 1.9
-# vth = 0.15
-# x0=200
-# x1=0
-# Hx = 1.2 #1.2
-# cx = 1 #1
-# =============================================================================
-
-xname = 'c'
-M = 100
-pr = 0.25 # 0.3
-k = 100 # 100
-tauv = 2
-vth = 0.2
-
-
-x0=0.01
-x1=0
-Hx = 1.5
-cx = 4
-
-
-# =============================================================================
-# xname = 'k'
-# M = 100
-# pr = 0.2
-# c = 0.003
-# tauv = 5
-# vth = 0.2
-# 
-# x0=100
-# x1=0
-# Hx = 1.7
-# cx = 1
-# =============================================================================
-
-# =============================================================================
-# xname = 'pr'
-# M = 100
-# c = 0.005
-# k = 100
-# tauv = 1
-# vth = 0.2
-# 
-# x0=0.2
-# x1=0
-# Hx = 2
-# cx = 10
-# =============================================================================
 
 delta_t = 0.01
 
@@ -228,8 +137,7 @@ for i, f_val in enumerate(f_val_list):
 # =============================================================================
 #         print(i/len(f_val_list))
 # =============================================================================
-
-    result = run_test(f_val, run_time, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname)
+    result = run_test(f_val, run_time, c, M, k, pr, d, h, m, tauv, vth, delta_t)
     mean_T_sim.append(result[0])
     CVT2_sim.append(result[1])
     
