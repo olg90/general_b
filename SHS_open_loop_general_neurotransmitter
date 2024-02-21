@@ -1,18 +1,14 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from scipy.stats import bayes_mvs as bayesest
-
 from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
 from numpy.random import exponential, binomial
-
-    
+import matplotlib.pyplot as plt
 
 def run_test(f, run_time, c, M, k, pr, d, h, m, tau, vth, delta_t):
        
     current_time = 0
     v = 0
     n = 0
-    z=0
+    z = 0
     AP_times = []
     t_measure = delta_t
     while current_time < run_time:
@@ -32,10 +28,8 @@ def run_test(f, run_time, c, M, k, pr, d, h, m, tau, vth, delta_t):
             if n < M:
                 n+=1
         else:
-            #--------------------------------------
-            v = (exp(-t_min*(d+1/tauv))*(-exp(t_min/tauv)*h*tau_v*z0+exp(d*t_min)*((-1+d*tauv)*v0+h*tauv*z0)))/(-1+d*tauv)
-            z*=exp(-t_min*d)
-            #--------------------------------------
+            v = (exp(-t_min*(d+1/tauv))*(-exp(t_min/tauv)*h*tauv*z+exp(d*t_min)*((-1+d*tauv)*v+h*tauv*z)))/(-1+d*tauv)
+            z = exp(-d*t_min)*z
         current_time += t_min
         t_measure -= t_min
         if t_measure == 0:
@@ -53,7 +47,7 @@ def get_T_mean(f, tauv, vth, c, pr, k, M):
     bMeanSS = pr * nMeanSS
     vatSS = c * bMeanSS
             
-    return tauv * np.log(1 / (1 - vth / (f * tauv * vatSS)))
+    return tauv * log(1 / (1 - vth / (f * tauv * vatSS)))
 
 def get_CVT2(f, k, M, pr, tauv, vth, c):
     numerator = -((k + f * pr)**2 * (
@@ -91,7 +85,7 @@ def get_CVT2(f, k, M, pr, tauv, vth, c):
                    (1 - (k + f * pr)**2 * tauv**2)) / 
                   (c * f * k * M * pr * tauv - (k + f * pr) * vth))))))
 
-    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * np.log(
+    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * log(
         (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
 
     result = numerator / denominator
@@ -99,7 +93,7 @@ def get_CVT2(f, k, M, pr, tauv, vth, c):
 
 def get_equations(f, c, M, k, pr, d, h, m, tauv, vth):
     Tmean=tauv*log(1/(1-(d*(k+f*pr)*vth)/(f*k*(c*d+h*m)*M*pr*tauv)))
-    CVT2=1
+    CVT2=0
     return Tmean, CVT2
 
 ###############################################################################
@@ -111,25 +105,25 @@ def get_equations(f, c, M, k, pr, d, h, m, tauv, vth):
 
 # Values of c to test
 fmin = 0
-fmax = 200
+fmax = 100
 n_samples = 100
-f_val_list = np.linspace(fmin,fmax, n_samples)
+f_val_list = linspace(fmin, fmax, n_samples)
 
 run_time = 15
 
-c = 0.015
-M = 100
-k = 100
-pr = 0.3
-d=1
-h=1
-m=1000
+c = 0.02
+M = 20
+k = 5
+pr = 0.1
+d = 1000
+h = 0.01
+m = 10
 tauv = 1
 vth = 0.2
 
 delta_t = 0.01
 
-    # Simulations
+# Simulations
 mean_T_sim = []
 CVT2_sim = []
 
@@ -140,7 +134,7 @@ for i, f_val in enumerate(f_val_list):
     result = run_test(f_val, run_time, c, M, k, pr, d, h, m, tauv, vth, delta_t)
     mean_T_sim.append(result[0])
     CVT2_sim.append(result[1])
-    
+
 # Equations
 
 mean_T_eq = []
@@ -148,14 +142,14 @@ CVT2_eq = []
 pf_eq = []
 
 for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, run_time, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname)
+    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, c, M, k, pr, d, h, m, tauv, vth)
     mean_T_eq.append(T_mean_eq_val)
     CVT2_eq.append(CVT2T_eq_val)
-    
-mean_T_sim = np.array(mean_T_sim)
-mean_T_eq = np.array(mean_T_eq)
-CVT2_sim = np.array(CVT2_sim)
-CVT2_eq = np.array(CVT2_eq)
+
+mean_T_sim = array(mean_T_sim)
+mean_T_eq = array(mean_T_eq)
+CVT2_sim = array(CVT2_sim)
+CVT2_eq = array(CVT2_eq)
 
 fontsize = 15
 lw = 2
@@ -169,13 +163,6 @@ ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 theoretical', linestyle = '-', lin
 ax[1].set_ylabel(r'noise $CV_{T}^2$', fontsize = fontsize)
 ax[0].tick_params(axis ='both', labelsize = fontsize)
 ax[1].tick_params(axis ='both', labelsize = fontsize)
-# =============================================================================
-# ax[0].set_xlim([0,fmax])
-# ax[1].set_xlim([0,fmax])
-# =============================================================================
-
-ax[0].plot([], [], ' ', label = r'${}$ as a function of $f$'.format(xname))
-ax[1].plot([], [], ' ', label = r'${}$ as a function of $f$'.format(xname))
 
 ax[0].legend(loc = 'upper right', fontsize = fontsize-5, handlelength = 0.5)
 ax[1].legend(loc = 'upper right', fontsize = fontsize-5, handlelength = 0.5)
