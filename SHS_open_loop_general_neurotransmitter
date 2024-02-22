@@ -3,8 +3,20 @@ from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, 
 from numpy.random import exponential, binomial
 import matplotlib.pyplot as plt
 
-def run_test(f, run_time, c, M, k, pr, d, h, m, tau, vth, delta_t):
-       
+def getnextv(t,tauv,d,h,z,v):
+    numerator=(exp(-t*(d+1/tauv))*(-exp(t/tauv)*h*tauv*z+exp(d*t)*((-1+d*tauv)*v+h*tauv*z)))
+    denominator=(-1+d*tauv)
+    return numerator/denominator
+
+def getnextz(t,d,z):
+    return exp(-d*t)*z
+
+def run_test(f, run_time, M, k, pr, d, h, m, tau, vth, delta_t):
+    
+    vhist=[]
+    zhist=[]
+    thist=[]
+    nhist=[]
     current_time = 0
     v = 0
     n = 0
@@ -14,85 +26,47 @@ def run_test(f, run_time, c, M, k, pr, d, h, m, tau, vth, delta_t):
     while current_time < run_time:
         t0=exponential(1./f)
         t1=exponential(1./(k*(M-n)+1e-10))
-        if t0<t1:
+        if t0<t1 and t0<t_measure:
             t_min=t0
             b = binomial(n, pr) # Number released
-            v+=c*b
             n-=b
             z+=m*b
             if v>vth:
                 AP_times.append(current_time)
                 v = 0
-        elif t1<t0:
+        elif t1<t0 and t1<t_measure:
             t_min=t1
             if n < M:
                 n+=1
+            if v>vth:
+                AP_times.append(current_time)
+                v = 0
         else:
-            v = (exp(-t_min*(d+1/tauv))*(-exp(t_min/tauv)*h*tauv*z+exp(d*t_min)*((-1+d*tauv)*v+h*tauv*z)))/(-1+d*tauv)
-            z = exp(-d*t_min)*z
+            v = getnextv(t_measure, tauv, d, h, z, v)
+            z = getnextz(t_measure, d, z)
+            t_min=t_measure
+            if v>vth:
+                AP_times.append(current_time)
+                v = 0
+        vhist.append(v)
+        zhist.append(z)
+        thist.append(current_time)
+        nhist.append(n)        
         current_time += t_min
         t_measure -= t_min
         if t_measure == 0:
             t_measure = delta_t
     if len(AP_times) < 2:
-        return nan, nan
+        Tmean = nan
+        CVT2 = nan
     else:
-        return mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]), \
-            var(diff(AP_times)[int(0.4*(len(AP_times))-1):]) / (mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]))**2
+        Tmean = mean(diff(AP_times)[int(0.4*(len(AP_times))-1):])
+        CVT2 = var(diff(AP_times)[int(0.4*(len(AP_times))-1):]) / (mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]))**2
 
-def get_T_mean(f, tauv, vth, c, pr, k, M):
-    # General equation attempt with p and q
-
-    nMeanSS = k * M / (f * pr + k)
-    bMeanSS = pr * nMeanSS
-    vatSS = c * bMeanSS
+    return Tmean, CVT2, vhist, zhist, thist, nhist
             
-    return tauv * log(1 / (1 - vth / (f * tauv * vatSS)))
-
-def get_CVT2(f, k, M, pr, tauv, vth, c):
-    numerator = -((k + f * pr)**2 * (
-        (2 * f * k**2 * M**2 * pr**2 * tauv * vth**2) / 
-        (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
-        1 / (k + f * pr - (k + f * pr)**3 * tauv**2) * 
-        (1 / (2 * k - f * (-2 + pr) * pr) * k * M * pr * 
-         (-f * (-2 + pr) * pr + 2 * k * (1 + (-1 + M) * pr)) * 
-         ((1 - k * tauv + f * pr * tauv) * (1 + k * tauv + f * pr * tauv) - 
-          4 * f * pr * tauv * ((c * f * k * M * pr * tauv) / 
-                               (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
-          (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
-           (1 + k * tauv - f * pr * tauv) * 
-           (-1 + k * tauv + f * pr * tauv)) / 
-          (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2) + 
-         2 * f * k * M * pr**2 * tauv * 
-         (((2 * k * M - f * (-2 + pr) * pr) * 
-           (-1 - (k + f * pr) * tauv + 
-            2 * ((c * f * k * M * pr * tauv) / 
-                 (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
-            (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
-             (-1 + k * tauv + f * pr * tauv)) / 
-            (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2)) / 
-         (2 * k - f * (-2 + pr) * pr) + 
-         1 / (k + f * pr) * 
-         k * M * ((k + f * pr) * tauv * 
-                  (1 + k * tauv + f * pr * tauv) - 
-                  2 * ((c * f * k * M * pr * tauv) / 
-                       (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
-                  (c**2 * f**2 * k**2 * M**2 * pr**2 * 
-                   (k + f * pr) * tauv**3 * 
-                   (-1 + k * tauv + f * pr * tauv)) / 
-                  (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
-                  (2 * c * f * k * M * pr * tauv * 
-                   (1 - (k + f * pr)**2 * tauv**2)) / 
-                  (c * f * k * M * pr * tauv - (k + f * pr) * vth))))))
-
-    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * log(
-        (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
-
-    result = numerator / denominator
-    return result
-
-def get_equations(f, c, M, k, pr, d, h, m, tauv, vth):
-    Tmean=tauv*log(1/(1-(d*(k+f*pr)*vth)/(f*k*(c*d+h*m)*M*pr*tauv)))
+def get_equations(f, M, k, pr, d, h, m, tauv, vth):
+    Tmean=tauv*log(1/(1-(d*(k+f*pr)*vth)/(f*h*k*m*M*pr*tauv)))
     CVT2=0
     return Tmean, CVT2
 
@@ -104,58 +78,71 @@ def get_equations(f, c, M, k, pr, d, h, m, tauv, vth):
 # Test 1
 
 # Values of c to test
-fmin = 0
+fmin = 1
 fmax = 100
 n_samples = 100
 f_val_list = linspace(fmin, fmax, n_samples)
 
-run_time = 15
+run_time = 10
 
-c = 0.02
-M = 20
-k = 5
+M = 100
+k = 1
 pr = 0.1
-d = 1000
-h = 0.01
-m = 10
-tauv = 1
+d = 1
+h = 1
+m = 1
+tauv = 0.01
 vth = 0.2
+f=1
 
-delta_t = 0.01
+delta_t = 0.001
+
+# =============================================================================
+# tm,cv,vh,zh,th,nh =run_test(f, run_time, M, k, pr, d, h, m, tauv, vth, delta_t)
+# fig, ax = plt.subplots(1,3, figsize=(10,3))
+# ax[0].plot(th,vh, label='v')
+# ax[0].legend()
+# ax[1].plot(th,zh, label='z')
+# ax[1].legend()
+# ax[2].plot(th,nh, label='n')
+# ax[2].legend()
+# plt.show()
+# 
+# =============================================================================
 
 # Simulations
-mean_T_sim = []
+Tsim = []
 CVT2_sim = []
 
 for i, f_val in enumerate(f_val_list):
 # =============================================================================
 #         print(i/len(f_val_list))
 # =============================================================================
-    result = run_test(f_val, run_time, c, M, k, pr, d, h, m, tauv, vth, delta_t)
-    mean_T_sim.append(result[0])
+    result = run_test(f_val, run_time, M, k, pr, d, h, m, tauv, vth, delta_t)
+    Tsim.append(result[0])
     CVT2_sim.append(result[1])
 
 # Equations
 
-mean_T_eq = []
+Teq = []
 CVT2_eq = []
 pf_eq = []
 
 for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, c, M, k, pr, d, h, m, tauv, vth)
-    mean_T_eq.append(T_mean_eq_val)
+    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, M, k, pr, d, h, m, tauv, vth)
+    Teq.append(T_mean_eq_val)
     CVT2_eq.append(CVT2T_eq_val)
 
-mean_T_sim = array(mean_T_sim)
-mean_T_eq = array(mean_T_eq)
+Tsim = array(Tsim)
+Teq = array(Teq)
 CVT2_sim = array(CVT2_sim)
 CVT2_eq = array(CVT2_eq)
 
 fontsize = 15
 lw = 2
 fig, ax = plt.subplots(1,2)
-ax[0].plot(f_val_list, 1/mean_T_sim, label = r'$1/<T>$ simulations', linewidth=lw)
-ax[0].plot(f_val_list, 1/mean_T_eq, label = r'$1/<T>$ theoretical', linestyle = '-', linewidth = lw)
+ax[0].plot(f_val_list, 1/Tsim, label = r'$1/<T>$ simulations', linewidth=lw)
+ax[0].plot(f_val_list, 1/Teq, label = r'$1/<T>$ theoretical', linestyle = '-', linewidth = lw)
 ax[0].set_xlabel(r'                                           action potential frequency $f$, $Hz$', fontsize = fontsize)
 ax[0].set_ylabel(r'mean output frequency $1/\langle T \rangle$, Hz', fontsize = fontsize)
 ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 simulations', linestyle = '-', linewidth=lw)
