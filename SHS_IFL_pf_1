@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
     current_time = 0
-    v2 = 0
     v3 = 0
     n1 = 0
     n2 = 0
@@ -17,110 +16,45 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
         t0=exponential(1./f)
         t1=exponential(1./(k1*(M1-n1)+1e-10))
         t2=exponential(1./(k2*(M2-n2)+1e-10))
-        if t0<t1 and t0<t2:
+        t3=exponential(1./f)
+        if t0<t1 and t0<t2 and t0<t3:
             t_min=t0
             b1 = binomial(n1, p1) # Number released
             n1-=b1
             v3+=c1*b1
-            v2+=c1*b1
-            if v2 >= vth2:
-                b2 = binomial(n2, p2) # Number released
-                n2-=b2         
-                v3-= c2*b2
-                v2 = 0
             if v3>vth3:
                 AP_times3.append(current_time)
                 v3 = 0
-        elif t1<t0 and t1<t2:
+        elif t1<t0 and t1<t2 and t1<t3:
             t_min=t1
             if n1 < M1:
                 n1+=1
-                
-        elif t2<t0 and t2<t1:
+        elif t2<t0 and t2<t1 and t2<t3:
             t_min=t2
             if n2 < M2:
-                n2+=1          
+                n2+=1     
+        elif t3<t0 and t3<t1 and t3<t2:
+            t_min=t0
+            b2 = binomial(n2, p2) # Number released
+            n2-=b2
+            v3-=c2*b2
         else:
             v3*=exp(-t_min/tau3)
-            v2*=exp(-t_min/tau2)
         current_time += t_min
-        t_measure -= t_min   
+        t_measure -= t_min
         if t_measure == 0:
             t_measure = delta_t
-# =============================================================================
-#     if len(inter_AP_times3) < 2:
-#         mean_inter_AP_time3 = nan
-#         CVT23 = nan
-#     else:
-#         mean_inter_AP_time3 = mean(inter_AP_times3)
-#         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
-#     return [mean_inter_AP_time3, CVT23]
-# =============================================================================
-    return mean(diff(AP_times3)[int(0.3*(len(AP_times3))-1):])
-
-def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
-    t3=[]
-    i=0
-    for i in range(len(flist)):
-# =============================================================================
-#         print('\r{:.2f}'.format(i/nsamples), end='')
-#         sys.stdout.flush()
-# =============================================================================
-        t3.append(run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t))
-# =============================================================================
-#     print('')
-# =============================================================================
-
-    f3=1/array(t3)
-    return f3
-
-def get_rval(ts):
-    a = [x for x in ts if isnan(x) == False]
-    if len(a) == 0:
-        return nan
+    if len(AP_times3) < 2:
+        Tmean = nan
+        CVT2 = nan
     else:
-        tmax = max(a)
-        tlast = ts[-1]
-        rval = 1-tlast/tmax
-        return rval
-
-def rtest(xn, xs, p1, p2, M1,M2,c1,c2,k1,k2,tau2,tau3,vth2,vth3,delta_t,fmax,nsamples):
-    
-    rvals=[]
-    for i,x in enumerate(xs):
-        print(i, 'of', xlen)
-        if xn == 'k1':
-            k1 = x
-        if xn == 'k2':
-            k2 = x
-        if xn == 'p1':
-            p1 = x
-        if xn == 'p2':
-            p2 = x
-        if xn == 'M1':
-            M1 = x
-        if xn == 'M2':
-            M2 = x
-        if xn == 'c1':
-            c1 = x
-        if xn == 'c2':
-            c2 = x
-        if xn == 'tau3':
-            tau3 = x
-        if xn == 'tau2':
-            tau2 = x
-        if xn == 'vth3':
-            vth3 = x
-        if xn == 'vth2':
-            vth2 = x
-        f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-        rval = get_rval(f3)
-        rvals.append(rval)
-    return rvals
+        Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
+        CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
+    return Tmean, CVT2
 
 def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
     vat = c1*f*p1*k1*M1/(k1 + f*p1) - c2*f*p2*k2*M2/(k2 + f*p2)
-    return tauv * log(1 / (1 - vth3 / (vat * tau3)))
+    return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
 
 # =============================================================================
 # def get_pi(f, c1, k1, M1, p1, vth2, tau2):
@@ -135,21 +69,21 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
 # Test 1
 
 #######################
-run_time = 60
+run_time = 15
 
 p1 = 0.2 # 0.2
-p2 = 0.11 # 0.02
+p2 = 0.01 # 0.02
 
-M1 = 75 # 100
+M1 = 100 # 100
 M2 = 100 # 100
 
 c1 = 0.01 # 0.01
 c2 = 0.02 # 0.01
 
-k1 = 1 # 1
+k1 = 10 # 1
 k2 = 100 # 10
 
-tau2 = 1
+tau2 = 0
 tau3 = 1 # 1
 vth2 = 0.2
 vth3 = 0.2 #0.2
@@ -159,92 +93,20 @@ fmax=500
 nsamples=100
 flist = linspace(0,fmax,nsamples)
 
-pstr='p1={}, p2={},\nM1={}, M1={},\nc1={}, c2={},\nk1={}, k2={},\ntau3={}, tau2={},\nvth3={}, vth2={}'.format(
-    p1,p2,M1,M2,c1,c2,k1,k2,tau3,tau2,vth3,vth2)
+ts,cs=[],[]
+for i in range(len(flist)):
+    print(i/len(flist))
+    T,C = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+    ts.append(T)
+    cs.append(C)
 
-# =============================================================================
-# f3 = get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-# r = get_rval(f3)
-# plt.plot(flist, f3)
-# =============================================================================
+te=[]
+for f in flist:
+    te.append(get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2))
 
-yn, ylist='k2', [1, 10, 50, 100]
-xn,xmin,xmax,xlen='vth2',0.001,0.4,25
-
-rlist = []
-xs=linspace(xmin,xmax,xlen)
-
-for y in ylist:
-
-    if yn == 'k1':
-        k1 = y
-    if yn == 'k2':
-        k2 = y
-    if yn == 'p1':
-        p1 = y
-    if yn == 'p2':
-        p2 = y
-    if yn == 'M1':
-        M1 = y
-    if yn == 'M2':
-        M2 = y
-    if yn == 'c1':
-        c1 = y
-    if yn == 'c2':
-        c2 = y
-    if yn == 'tau3':
-        tauv = y
-    if yn == 'tau2':
-        tauv = y
-    if yn == 'vth3':
-        vth = y
-    if yn == 'vth2':
-        vth = y
-    rlist.append(rtest(xn, xs, p1, p2, M1, M2, c1, c2, k1, k2, tau2, 
-                       tau3, vth2, vth3, delta_t, fmax, nsamples))
-    
-rlisteq=[]
-for y in ylist:
-
-    if yn == 'k1':
-        k1 = y
-    if yn == 'k2':
-        k2 = y
-    if yn == 'p1':
-        p1 = y
-    if yn == 'p2':
-        p2 = y
-    if yn == 'M1':
-        M1 = y
-    if yn == 'M2':
-        M2 = y
-    if yn == 'c1':
-        c1 = y
-    if yn == 'c2':
-        c2 = y
-    if yn == 'tau3':
-        tauv = y
-    if yn == 'tau2':
-        tauv = y
-    if yn == 'vth3':
-        vth = y
-    if yn == 'vth2':
-        vth = y
-    rlisteq.append(rtest(xn, xs, p1, p2, M1, M2, c1, c2, k1, k2, tau2, 
-                       tau3, vth2, vth3, delta_t, fmax, nsamples))    
-#%%
-fontsize = 20
-plt.figure()
-plt.ylabel('band-pass \ndrop percentage', fontsize=fontsize)
-for i in range(len(rlist)):
-    plt.plot(xs,rlist[i], label='{}={}'.format(yn, ylist[i]))
-    
-plt.plot([],[], ' ', label=pstr)
-plt.xlim([xs[0], xs[-1]])
-plt.ylim([0,1])
-plt.xlabel(xn)
-plt.legend(loc='upper right')
+plt.subplot(1,2,1)
+plt.plot(flist,1/array(ts))
+plt.plot(flist,1/array(te))
+plt.subplot(1,2,2)
+plt.plot(flist,cs)
 plt.show()
-
-
-
