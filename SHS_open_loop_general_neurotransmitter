@@ -1,75 +1,66 @@
-from scipy.stats import bayes_mvs as bayesest
-from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
 from numpy.random import exponential, binomial
+import sys
+import cProfile
+
 import matplotlib.pyplot as plt
 
-def getnextv(t,tauv,d,h,z,v):
-    numerator=(exp(-t*(d+1/tauv))*(-exp(t/tauv)*h*tauv*z+exp(d*t)*((-1+d*tauv)*v+h*tauv*z)))
-    denominator=(-1+d*tauv)
-    return numerator/denominator
-
-def getnextz(t,d,z):
-    return exp(-d*t)*z
-
-def run_test(f, run_time, M, k, pr, d, h, m, tau, vth, delta_t):
-    
-    vhist=[]
-    zhist=[]
-    thist=[]
-    nhist=[]
+def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
     current_time = 0
-    v = 0
-    n = 0
-    z = 0
-    AP_times = []
+    v3 = 0
+    n1 = 0
+    n2 = 0
+    AP_times3 = []
     t_measure = delta_t
     while current_time < run_time:
         t0=exponential(1./f)
-        t1=exponential(1./(k*(M-n)+1e-10))
-        if t0<t1 and t0<t_measure:
+        t1=exponential(1./(k1*(M1-n1)+1e-10))
+        t2=exponential(1./(k2*(M2-n2)+1e-10))
+        t3=exponential(1./f)
+        if t0<t1 and t0<t2 and t0<t3:
             t_min=t0
-            b = binomial(n, pr) # Number released
-            n-=b
-            z+=m*b
-            if v>vth:
-                AP_times.append(current_time)
-                v = 0
-        elif t1<t0 and t1<t_measure:
+            b1 = binomial(n1, p1) # Number released
+            n1-=b1
+            v3+=c1*b1
+            if v3>vth3:
+                AP_times3.append(current_time)
+                v3 = 0
+        elif t1<t0 and t1<t2 and t1<t3:
             t_min=t1
-            if n < M:
-                n+=1
-            if v>vth:
-                AP_times.append(current_time)
-                v = 0
+            if n1 < M1:
+                n1+=1
+        elif t2<t0 and t2<t1 and t2<t3:
+            t_min=t2
+            if n2 < M2:
+                n2+=1     
+        elif t3<t0 and t3<t1 and t3<t2:
+            t_min=t0
+            b2 = binomial(n2, p2) # Number released
+            n2-=b2
+            v3-=c2*b2
         else:
-            v = getnextv(t_measure, tauv, d, h, z, v)
-            z = getnextz(t_measure, d, z)
-            t_min=t_measure
-            if v>vth:
-                AP_times.append(current_time)
-                v = 0
-        vhist.append(v)
-        zhist.append(z)
-        thist.append(current_time)
-        nhist.append(n)        
+            v3*=exp(-t_min/tau3)
         current_time += t_min
         t_measure -= t_min
         if t_measure == 0:
             t_measure = delta_t
-    if len(AP_times) < 2:
+    if len(AP_times3) < 2:
         Tmean = nan
         CVT2 = nan
     else:
-        Tmean = mean(diff(AP_times)[int(0.4*(len(AP_times))-1):])
-        CVT2 = var(diff(AP_times)[int(0.4*(len(AP_times))-1):]) / (mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]))**2
-
-    return Tmean, CVT2, vhist, zhist, thist, nhist
-            
-def get_equations(f, M, k, pr, d, h, m, tauv, vth):
-    Tmean=tauv*log(1/(1-(d*(k+f*pr)*vth)/(f*h*k*m*M*pr*tauv)))
-    CVT2=0
+        Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
+        CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
     return Tmean, CVT2
 
+def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
+    vat = c1*f*p1*k1*M1/(k1 + f*p1) - c2*f*p2*k2*M2/(k2 + f*p2)
+    return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
+
+# =============================================================================
+# def get_pi(f, c1, k1, M1, p1, vth2, tau2):
+#     return tauv * log(1/(1-(((k1 + f * p1)*vth2)/(c1 * f*k1*M1*p1*tau2))))
+# =============================================================================
+    
 ###############################################################################
 #
 #                               Main Code
@@ -77,86 +68,45 @@ def get_equations(f, M, k, pr, d, h, m, tauv, vth):
 ###############################################################################
 # Test 1
 
-# Values of c to test
-fmin = 1
-fmax = 100
-n_samples = 100
-f_val_list = linspace(fmin, fmax, n_samples)
+#######################
+run_time = 15
 
-run_time = 10
+p1 = 0.2 # 0.2
+p2 = 0.01 # 0.02
 
-M = 100
-k = 1
-pr = 0.1
-d = 1
-h = 1
-m = 1
-tauv = 0.01
-vth = 0.2
-f=1
+M1 = 100 # 100
+M2 = 100 # 100
 
-delta_t = 0.001
+c1 = 0.01 # 0.01
+c2 = 0.02 # 0.01
 
-# =============================================================================
-# tm,cv,vh,zh,th,nh =run_test(f, run_time, M, k, pr, d, h, m, tauv, vth, delta_t)
-# fig, ax = plt.subplots(1,3, figsize=(10,3))
-# ax[0].plot(th,vh, label='v')
-# ax[0].legend()
-# ax[1].plot(th,zh, label='z')
-# ax[1].legend()
-# ax[2].plot(th,nh, label='n')
-# ax[2].legend()
-# plt.show()
-# 
-# =============================================================================
+k1 = 10 # 1
+k2 = 100 # 10
 
-# Simulations
-Tsim = []
-CVT2_sim = []
+tau2 = 1
+tau3 = 1 # 1
+vth2 = 0.2
+vth3 = 0.2 #0.2
+delta_t = 0.01
 
-for i, f_val in enumerate(f_val_list):
-# =============================================================================
-#         print(i/len(f_val_list))
-# =============================================================================
-    result = run_test(f_val, run_time, M, k, pr, d, h, m, tauv, vth, delta_t)
-    Tsim.append(result[0])
-    CVT2_sim.append(result[1])
+fmax=500
+nsamples=100
+flist = linspace(0,fmax,nsamples)
 
-# Equations
+ts,cs=[],[]
+for i in range(len(flist)):
+    print(i/len(flist))
+    T,C = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+    ts.append(T)
+    cs.append(C)
 
-Teq = []
-CVT2_eq = []
-pf_eq = []
+te=[]
+for f in flist:
+    te.append(get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2))
 
-for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, M, k, pr, d, h, m, tauv, vth)
-    Teq.append(T_mean_eq_val)
-    CVT2_eq.append(CVT2T_eq_val)
-
-Tsim = array(Tsim)
-Teq = array(Teq)
-CVT2_sim = array(CVT2_sim)
-CVT2_eq = array(CVT2_eq)
-
-fontsize = 15
-lw = 2
-fig, ax = plt.subplots(1,2)
-ax[0].plot(f_val_list, 1/Tsim, label = r'$1/<T>$ simulations', linewidth=lw)
-ax[0].plot(f_val_list, 1/Teq, label = r'$1/<T>$ theoretical', linestyle = '-', linewidth = lw)
-ax[0].set_xlabel(r'                                           action potential frequency $f$, $Hz$', fontsize = fontsize)
-ax[0].set_ylabel(r'mean output frequency $1/\langle T \rangle$, Hz', fontsize = fontsize)
-ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 simulations', linestyle = '-', linewidth=lw)
-ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 theoretical', linestyle = '-', linewidth = lw)
-ax[1].set_ylabel(r'noise $CV_{T}^2$', fontsize = fontsize)
-ax[0].tick_params(axis ='both', labelsize = fontsize)
-ax[1].tick_params(axis ='both', labelsize = fontsize)
-
-ax[0].legend(loc = 'upper right', fontsize = fontsize-5, handlelength = 0.5)
-ax[1].legend(loc = 'upper right', fontsize = fontsize-5, handlelength = 0.5)
-
-aval = 0.2
-ax[0].grid(True, alpha = aval)
-ax[1].grid(True, alpha = aval)
-
-plt.tight_layout()
+plt.subplot(1,2,1)
+plt.plot(flist,1/array(ts))
+plt.plot(flist,1/array(te))
+plt.subplot(1,2,2)
+plt.plot(flist,cs)
 plt.show()
