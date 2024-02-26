@@ -1,7 +1,6 @@
-from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log,around, linspace, isnan, zeros, arange
 from numpy.random import exponential, binomial
 import sys
-import cProfile
 
 import matplotlib.pyplot as plt
 
@@ -19,9 +18,9 @@ def get_arg_typi(i):
 def to_dict(**x):
     return x
 
-def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
+def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
+    # SHS model
     current_time = 0
-    v2 = 0
     v3 = 0
     n1 = 0
     n2 = 0
@@ -31,83 +30,132 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
         t0=exponential(1./f)
         t1=exponential(1./(k1*(M1-n1)+1e-10))
         t2=exponential(1./(k2*(M2-n2)+1e-10))
-        if t0<t1 and t0<t2:
+        t3=exponential(1./f)
+        if t0<t1 and t0<t2 and t0<t3:
             t_min=t0
             b1 = binomial(n1, p1) # Number released
             n1-=b1
             v3+=c1*b1
-            v2+=c1*b1
-            if v2 >= vth2:
-                b2 = binomial(n2, p2) # Number released
-                n2-=b2         
-                v3-= c2*b2
-                v2 = 0
             if v3>vth3:
                 AP_times3.append(current_time)
                 v3 = 0
-        elif t1<t0 and t1<t2:
+        elif t1<t0 and t1<t2 and t1<t3:
             t_min=t1
             if n1 < M1:
                 n1+=1
-
-        elif t2<t0 and t2<t1:
+        elif t2<t0 and t2<t1 and t2<t3:
             t_min=t2
             if n2 < M2:
-                n2+=1          
+                n2+=1
+        elif t3<t0 and t3<t1 and t3<t2:
+            t_min=t3
+            b2 = binomial(n2, p2) # Number released
+            n2-=b2
+            v3-=c2*b2
         else:
             v3*=exp(-t_min/tau3)
-            v2*=exp(-t_min/tau2)
         current_time += t_min
-        t_measure -= t_min   
+        t_measure -= t_min
         if t_measure == 0:
             t_measure = delta_t
-# =============================================================================
-#     if len(inter_AP_times3) < 2:
-#         mean_inter_AP_time3 = nan
-#         CVT23 = nan
-#     else:
-#         mean_inter_AP_time3 = mean(inter_AP_times3)
-#         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
-#     return [mean_inter_AP_time3, CVT23]
-# =============================================================================
-    return mean(diff(AP_times3)[int(0.4*(len(AP_times3)-1)):])
+    if len(AP_times3) < 2:
+        Tmean = nan
+        CVT2 = nan
+    else:
+        Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
+        CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
+    return Tmean, CVT2
 
-def get_fs(flist, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
-    t3=[]
-    i=0
-    for i in range(len(flist)):
 # =============================================================================
-#         print('\r{:.2f}'.format(i/nsamples), end='')
-#         sys.stdout.flush()
-# =============================================================================
-        results = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
-        t3.append(results[0])
-# =============================================================================
-#     print('')
+## Test that models the real thing occcurring
+# def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
+#     current_time = 0
+#     v2 = 0
+#     v3 = 0
+#     n1 = 0
+#     n2 = 0
+#     AP_times3 = []
+#     t_measure = delta_t
+#     while current_time < run_time:
+#         t0=exponential(1./f)
+#         t1=exponential(1./(k1*(M1-n1)+1e-10))
+#         t2=exponential(1./(k2*(M2-n2)+1e-10))
+#         if t0<t1 and t0<t2:
+#             t_min=t0
+#             b1 = binomial(n1, p1) # Number released
+#             n1-=b1
+#             v3+=c1*b1
+#             v2+=c1*b1
+#             if v2 >= vth2:
+#                 b2 = binomial(n2, p2) # Number released
+#                 n2-=b2         
+#                 v3-= c2*b2
+#                 v2 = 0
+#             if v3>vth3:
+#                 AP_times3.append(current_time)
+#                 v3 = 0
+#         elif t1<t0 and t1<t2:
+#             t_min=t1
+#             if n1 < M1:
+#                 n1+=1
+#         elif t2<t0 and t2<t1:
+#             t_min=t2
+#             if n2 < M2:
+#                 n2+=1          
+#         else:
+#             v3*=exp(-t_min/tau3)
+#             v2*=exp(-t_min/tau2)
+#         current_time += t_min
+#         t_measure -= t_min   
+#         if t_measure == 0:
+#             t_measure = delta_t
+# # =============================================================================
+# #     if len(inter_AP_times3) < 2:
+# #         mean_inter_AP_time3 = nan
+# #         CVT23 = nan
+# #     else:
+# #         mean_inter_AP_time3 = mean(inter_AP_times3)
+# #         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
+# #     return [mean_inter_AP_time3, CVT23]
+# # =============================================================================
+#     return mean(diff(AP_times3)[int(0.3*(len(AP_times3)-1)):])
 # =============================================================================
 
-    f3=1/array(t3)
-    return f3
 
 def get_rval(ts):
     a = [x for x in ts if isnan(x) == False]
     if len(a) == 0:
         return nan
     else:
-        tmax = max(a)
-        tlast = ts[-1]
-        rval = (tmax-tlast)/tmax
-        return rval
-    
-def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
-    pi = get_pi(f, c1, k1, M1, p1, vth2, tau2)
-    b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pi)
-    b2ss = p2*(k2*M2)/(k2 + f*p2*pi)
-    vat = (1 + pi)*c1*f*b1ss - c2*f*b2ss*pi
-    return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
+        rval = 1-a[-1]/max(a)
+        if rval < 0 or rval > 1:
+            return nan
+        else:
+            return rval
 
-def get_pi(f, c1, k1, M1, p1, vth2, tau2):
-    return tau2 * log(1/(1-(((k1 + f * p1)*vth2)/(c1 * f*k1*M1*p1*tau2))))    
+# =============================================================================
+# def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
+#     pi=1
+#     b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pi)
+#     b2ss = p2*(k2*M2)/(k2 + f*p2*pi)
+#     vat = c1*f*b1ss - c2*f*b2ss*pi
+#     return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
+# =============================================================================
+
+# =============================================================================
+# def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
+#     
+#     
+#     numerator = f * log((f * (-c2 * k2 * M2 * (k1 + f * p1) * p2 + c1 * k1 * M1 * p1 * (k2 + f * p2) * tauv) /
+#                    (c1 * f * k1 * M1 * p1 * (k2 + f * p2) * tauv - (k1 + f * p1) * 
+#                    (c2 * f * k2 * M2 * p2 * tauv + k2 * vth + f * p2 * vth))))
+# 
+#     return tauv * numerator
+# =============================================================================
+
+def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
+    pi=1
+    return tauv * log(1 / (1 - vth / ((c1*f*p1*k1*M1/(k1 + f*p1) - c2*f*pi*p2*k2*M2/(k2 + f*p2*pi)) * tauv)))
 
 ###############################################################################
 #
@@ -120,41 +168,48 @@ def get_pi(f, c1, k1, M1, p1, vth2, tau2):
 # Defaults
 
 #
-run_time = 60
+run_time = 30
 
-p1 = 0.2 # 0.2
-p2 = 0.11 # 0.02
+p1 = 0.1 # 0.2
+p2 = 0.001 # 0.02
 
-M1 = 75 # 100
+M1 = 30 # 100
 M2 = 100 # 100
 
 c1 = 0.01 # 0.01
-c2 = 0.02 # 0.01
+c2 = 0.05 # 0.01
 
-k1 = 1 # 1
+k1 = 10 # 1
 k2 = 100 # 10
 
-tau2 = 1
+tau2 = 100000
+vth2 = 0.00001
+
 tau3 = 1 # 1
-vth2 = 0.2
 vth3 = 0.2 #0.2
+
 delta_t = 0.01
 
 fmax=500
 nsamples=100
 flist = linspace(0,fmax,nsamples)
 
+
 # heatmap of pf for vth vs f
 
-# Simulations
-xn,xmin,xmax,xlen='k1',1,20,25
-yn,ymin,ymax,ylen='k2',1,20,25
+# =============================================================================
+# xn,xmin,xmax,xlen='k1', 1, 40, 30
+# yn,ymin,ymax,ylen='k2', 1, 40, 30
+# =============================================================================
+
+xn,xmin,xmax,xlen='c1', 0.001, 0.04, 25
+yn,ymin,ymax,ylen='c2', 0.001, 0.02, 25
 
 xs=linspace(xmin,xmax,xlen)
 ys=linspace(ymin,ymax,ylen)
 
 heatmap = zeros((xlen,ylen))
-for i, x in enumerate(xs): # modify here j, X <--
+for i, x in enumerate(xs): 
     print(i, ' of ', xlen)
 
     for j, y in enumerate(ys):
@@ -170,12 +225,12 @@ for i, x in enumerate(xs): # modify here j, X <--
             k2 = x
         if yn == 'k2':
             k2 = y
-
+        
         if xn == 'p1':
             p1 = x
         if yn == 'p1':
             p1 = y
-
+        
         if xn == 'p2':
             p2 = x
         if yn == 'p2':
@@ -202,26 +257,35 @@ for i, x in enumerate(xs): # modify here j, X <--
             c2 = y
 
         if xn == 'tau3':
-            tauv = x
+            tau3 = x
+        if yn == 'tau3':
+            tau3 = y
+            
+        if xn == 'tau2':
+            tau2 = x
         if yn == 'tau2':
-            tauv = y
+            tau2 = y
 
-        if xn == 'vth':
-            vth = x
-        if yn == 'vth':
-            vth = y
+        if xn == 'vth3':
+            vth3 = x
+        if yn == 'vth3':
+            vth3 = y
+            
+        if xn == 'vth2':
+            vth2 = x
+        if yn == 'vth2':
+            vth2 = y
 
         t3list=[]
         for f in flist:
-            t3 = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+            t3,_ = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t)
             t3list.append(t3)
         r3 = get_rval(1/array(t3list))
         heatmap[i,j] = r3
     print('')
-
-
-
-# equation 
+    
+    
+# theoretical equation
 heatmapeq = zeros((xlen,ylen))
 for i, x in enumerate(xs): # modify here j, X <--
     print(i, ' of ', xlen)
@@ -279,16 +343,35 @@ for i, x in enumerate(xs): # modify here j, X <--
             vth = x
         if yn == 'vth':
             vth = y
+            
 
-        t3list=[]
+
+        t3listeq=[]
         for f in flist:
-            t3 = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2)
+            t3 = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, vth3)
             t3list.append(t3)
         r3 = get_rval(1/array(t3list))
         heatmapeq[i,j] = r3
     print('')    
+    
+    
+#%%
+fontsize = 20
+plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
+           extent=[xmin,xmax,ymin,ymax], 
+           aspect='auto',
+           vmin=0, vmax=1)
+cbar = plt.colorbar()
+cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
+cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
+cbar.ax.tick_params(labelsize=fontsize)
 
-
+plt.xlabel('excitatory neurotransmitter\n'+'coefficient $c_e$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
+plt.ylabel('inhibitory neurotransmitter\n'+ r'coefficient $c_i$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
+plt.show()
+            
+#%%
 # plot the data
 
 fontsize = 20
@@ -298,9 +381,11 @@ plt.imshow(heatmap.T, origin='lower', cmap='viridis',
            aspect='auto',
            vmin=0, vmax=1)
 
-plt.xlabel('refilling rate k1', fontsize = fontsize)
-plt.ylabel('refilling rate k2', fontsize = fontsize)
+plt.xlabel(r'                                 excitatory refilling rate $k_e$, $sec^{{-1}}$', fontsize = fontsize)
+plt.ylabel('inhibitory refilling\n'+r'rate $k_i$, $sec^{{-1}}$', fontsize = fontsize)
 plt.tick_params(axis='both', labelsize=fontsize)
+plt.title('simulations', fontsize=fontsize)
+
 
 plt.subplot(1,2,2)
 plt.imshow(heatmapeq.T, origin='lower', cmap='viridis', 
@@ -308,12 +393,12 @@ plt.imshow(heatmapeq.T, origin='lower', cmap='viridis',
            aspect='auto',
            vmin=0, vmax=1)
 cbar = plt.colorbar()
-cbar_label = 'Percentage drop from peak\n firing frequency at $500$ $Hz$'
+cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
 cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
 cbar.ax.tick_params(labelsize=fontsize)
+plt.yticks([])
+plt.title('theoretical', fontsize=fontsize)
 
-plt.xlabel('refilling rate k1', fontsize = fontsize)
-plt.ylabel('refilling rate k2', fontsize = fontsize)
 plt.tick_params(axis='both', labelsize=fontsize)
 
 plt.show()
