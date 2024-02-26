@@ -141,8 +141,7 @@ def get_rval(ts):
 # =============================================================================
 
 def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
-    pi=1
-    return tauv * log(1 / (1 - vth / ((c1*f*p1*k1*M1/(k1 + 2*f*p1) - c2*f*pi*p2*k2*M2/(k2 + f*p2*pi)) * tauv)))
+    return tauv * log(1 / (1 - vth / ((c1*f*p1*k1*M1/(k1 + f*p1) - c2*f*p2*k2*M2/(k2 + f*p2)) * tauv)))
 
 ###############################################################################
 #
@@ -154,69 +153,43 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
 #######################
 # Defaults
 
-run_time = 15
+#
+run_time = 60
 
-p1 = 0.2 # 0.2
-p2 = 0.11 # 0.02
+p1 = 0.1 # 0.2
+p2 = 0.001 # 0.02
 
-M1 = 75 # 100
+M1 = 30 # 100
 M2 = 100 # 100
 
 c1 = 0.01 # 0.01
-c2 = 0.02 # 0.01
+c2 = 0.05 # 0.01
 
-k1 = 1 # 1
+k1 = 10 # 1
 k2 = 100 # 10
 
-tau2 = 1
+tau2 = 100000
+vth2 = 0.00001
+
 tau3 = 1 # 1
-vth2 = 0.2
 vth3 = 0.2 #0.2
+
 delta_t = 0.01
 
 fmax=500
 nsamples=100
 flist = linspace(0,fmax,nsamples)
 
-#
-# =============================================================================
-# run_time = 15
-# 
-# p1 = 0.1 # 0.2
-# p2 = 0.001 # 0.02
-# 
-# M1 = 30 # 100
-# M2 = 100 # 100
-# 
-# c1 = 0.01 # 0.01
-# c2 = 0.05 # 0.01
-# 
-# k1 = 10 # 1
-# k2 = 100 # 10
-# 
-# tau2 = 100000
-# vth2 = 0.00001
-# 
-# tau3 = 1 # 1
-# vth3 = 0.2 #0.2
-# 
-# delta_t = 0.01
-# 
-# fmax=500
-# nsamples=100
-# flist = linspace(0,fmax,nsamples)
-# =============================================================================
-
 
 # heatmap of pf for vth vs f
 
-xn,xmin,xmax,xlen='k1', 1, 40, 30
-yn,ymin,ymax,ylen='k2', 1, 40, 30
+# =============================================================================
+# xn,xmin,xmax,xlen='k1', 1, 40, 30
+# yn,ymin,ymax,ylen='k2', 1, 40, 30
+# =============================================================================
 
-# =============================================================================
-# xn,xmin,xmax,xlen='c1', 0.001, 0.04, 25
-# yn,ymin,ymax,ylen='c2', 0.001, 0.02, 25
-# =============================================================================
+xn,xmin,xmax,xlen='c1', 0.001, 0.04, 25
+yn,ymin,ymax,ylen='c2', 0.001, 0.02, 25
 
 xs=linspace(xmin,xmax,xlen)
 ys=linspace(ymin,ymax,ylen)
@@ -291,7 +264,7 @@ for i, x in enumerate(xs):
 
         t3list=[]
         for f in flist:
-            t3 = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+            t3,_ = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t)
             t3list.append(t3)
         r3 = get_rval(1/array(t3list))
         heatmap[i,j] = r3
