@@ -220,8 +220,8 @@ flist = linspace(0,fmax,nsamples)
 
 # heatmap of pf for vth vs f
 
-xn,xmin,xmax,xlen='k1', 50, 200, 25
-yn,ymin,ymax,ylen='k2', 50, 200, 25
+xn,xmin,xmax,xlen='k1', 1, 40, 25
+yn,ymin,ymax,ylen='k2', 1, 40, 25
 
 # =============================================================================
 # xn,xmin,xmax,xlen='c1', 0.001, 0.04, 25
@@ -373,6 +373,7 @@ for i, x in enumerate(xs): # modify here j, X <--
         r3 = get_rval(1/array(t3listeq))
         heatmapeq[i,j] = r3
     print('')
+    
 #%%
 fontsize = 20
 plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
