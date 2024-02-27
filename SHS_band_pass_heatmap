@@ -4,7 +4,6 @@ import sys
 
 import matplotlib.pyplot as plt
 
-
 # =============================================================================
 # def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
 #     # SHS model
@@ -108,7 +107,6 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
 # =============================================================================
     return mean(diff(AP_times3)[int(0.3*(len(AP_times3)-1)):])
 
-
 def get_rval(ts):
     a = [x for x in ts if isnan(x) == False]
     if len(a) == 0:
@@ -119,7 +117,6 @@ def get_rval(ts):
             return nan
         else:
             return rval
-
 # =============================================================================
 # def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
 #     pi=1
@@ -150,7 +147,8 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
 ###############################################################################
 # Test 1
 
-run_time = 60
+#
+run_time = 15
 
 p1 = 0.1 # 0.2
 p2 = 0.001 # 0.02
@@ -158,10 +156,10 @@ p2 = 0.001 # 0.02
 M1 = 30 # 100
 M2 = 100 # 100
 
-c1 = 0.01 # 0.01
-c2 = 0.05 # 0.01
+c1 = 0.01 # 0.01075
+c2 = 0.05 # 0.05
 
-k1 = 10 # 1
+k1 = 100 # 1
 k2 = 100 # 10
 
 tau2 = 100000
@@ -173,14 +171,41 @@ vth3 = 0.2 #0.2
 delta_t = 0.01
 
 fmax=500
-nsamples=100
-flist = linspace(0,fmax,nsamples)
+nsamples=50
 
+# =============================================================================
+# run_time = 60
+# 
+# p1 = 0.1 # 0.2
+# p2 = 0.001 # 0.02
+# 
+# M1 = 30 # 100
+# M2 = 100 # 100
+# 
+# c1 = 0.01 # 0.01
+# c2 = 0.05 # 0.01
+# 
+# k1 = 10 # 1
+# k2 = 100 # 10
+# 
+# tau2 = 100000
+# vth2 = 0.00001
+# 
+# tau3 = 1 # 1
+# vth3 = 0.2 #0.2
+# 
+# delta_t = 0.01
+# 
+# fmax=500
+# nsamples=100
+# =============================================================================
+
+flist = linspace(0,fmax,nsamples)
 
 # heatmap of pf for vth vs f
 
-xn,xmin,xmax,xlen='k1', 1, 20, 25
-yn,ymin,ymax,ylen='k2', 1, 20, 25
+xn,xmin,xmax,xlen='k1', 50, 200, 25
+yn,ymin,ymax,ylen='k2', 50, 200, 25
 
 # =============================================================================
 # xn,xmin,xmax,xlen='c1', 0.001, 0.04, 25
@@ -212,7 +237,7 @@ for i, x in enumerate(xs):
             p1 = x
         if yn == 'p1':
             p1 = y
-        
+
         if xn == 'p2':
             p2 = x
         if yn == 'p2':
@@ -265,8 +290,7 @@ for i, x in enumerate(xs):
         r3 = get_rval(1/array(t3list))
         heatmap[i,j] = r3
     print('')
-    
-    
+
 # theoretical equation
 heatmapeq = zeros((xlen,ylen))
 for i, x in enumerate(xs): # modify here j, X <--
@@ -329,29 +353,12 @@ for i, x in enumerate(xs): # modify here j, X <--
         t3listeq=[]
         for f in flist:
             t3 = get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, vth3)
-            t3list.append(t3)
-        r3 = get_rval(1/array(t3list))
+            t3listeq.append(t3)
+        r3 = get_rval(1/array(t3listeq))
         heatmapeq[i,j] = r3
-    print('')    
-#%%
-fontsize = 20
-plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
-           extent=[xmin,xmax,ymin,ymax], 
-           aspect='auto',
-           vmin=0, vmax=1)
-cbar = plt.colorbar()
-cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
-cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
-cbar.ax.tick_params(labelsize=fontsize)
-
-plt.xlabel('excitatory neurotransmitter\n'+'coefficient $c_e$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
-plt.ylabel('inhibitory neurotransmitter\n'+ r'coefficient $c_i$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
-plt.tick_params(axis='both', labelsize=fontsize)
-plt.show()
-            
+    print('')
 #%%
 # plot the data
-
 fontsize = 10
 plt.subplot(1,2,1)
 plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
@@ -380,3 +387,21 @@ plt.tick_params(axis='both', labelsize=fontsize)
 
 plt.show()
 #plt.savefig('./something2.eps')
+#%%
+# =============================================================================
+# fontsize = 20
+# plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
+#            extent=[xmin,xmax,ymin,ymax], 
+#            aspect='auto',
+#            vmin=0, vmax=1)
+# cbar = plt.colorbar()
+# cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
+# cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
+# cbar.ax.tick_params(labelsize=fontsize)
+# 
+# plt.xlabel('excitatory neurotransmitter\n'+'coefficient $c_e$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
+# plt.ylabel('inhibitory neurotransmitter\n'+ r'coefficient $c_i$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
+# plt.tick_params(axis='both', labelsize=fontsize)
+# plt.show()
+#             
+# =============================================================================
