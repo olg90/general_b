@@ -4,6 +4,7 @@ import sys
 
 import matplotlib.pyplot as plt
 
+
 # =============================================================================
 # def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
 #     # SHS model
@@ -107,6 +108,7 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3
 # =============================================================================
     return mean(diff(AP_times3)[int(0.3*(len(AP_times3)-1)):])
 
+
 def get_rval(ts):
     a = [x for x in ts if isnan(x) == False]
     if len(a) == 0:
@@ -117,6 +119,7 @@ def get_rval(ts):
             return nan
         else:
             return rval
+
 # =============================================================================
 # def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
 #     pi=1
@@ -151,12 +154,12 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
 run_time = 15
 
 p1 = 0.1 # 0.2
-p2 = 0.001 # 0.02
+p2 = 0.005 # 0.02
 
 M1 = 30 # 100
 M2 = 100 # 100
 
-c1 = 0.01 # 0.01075
+c1 = 0.01075 # 0.01075
 c2 = 0.05 # 0.05
 
 k1 = 100 # 1
@@ -171,7 +174,7 @@ vth3 = 0.2 #0.2
 delta_t = 0.01
 
 fmax=500
-nsamples=50
+nsamples=100
 
 # =============================================================================
 # run_time = 60
@@ -358,6 +361,22 @@ for i, x in enumerate(xs): # modify here j, X <--
         heatmapeq[i,j] = r3
     print('')
 #%%
+fontsize = 20
+plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
+           extent=[xmin,xmax,ymin,ymax], 
+           aspect='auto',
+           vmin=0, vmax=1)
+cbar = plt.colorbar()
+cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
+cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
+cbar.ax.tick_params(labelsize=fontsize)
+
+plt.xlabel('excitatory neurotransmitter\n'+'coefficient $c_e$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
+plt.ylabel('inhibitory neurotransmitter\n'+ r'coefficient $c_i$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
+plt.show()
+            
+#%%
 # plot the data
 fontsize = 10
 plt.subplot(1,2,1)
@@ -387,21 +406,3 @@ plt.tick_params(axis='both', labelsize=fontsize)
 
 plt.show()
 #plt.savefig('./something2.eps')
-#%%
-# =============================================================================
-# fontsize = 20
-# plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
-#            extent=[xmin,xmax,ymin,ymax], 
-#            aspect='auto',
-#            vmin=0, vmax=1)
-# cbar = plt.colorbar()
-# cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
-# cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
-# cbar.ax.tick_params(labelsize=fontsize)
-# 
-# plt.xlabel('excitatory neurotransmitter\n'+'coefficient $c_e$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
-# plt.ylabel('inhibitory neurotransmitter\n'+ r'coefficient $c_i$, $vesicles/sec^{{-1}}$', fontsize = fontsize)
-# plt.tick_params(axis='both', labelsize=fontsize)
-# plt.show()
-#             
-# =============================================================================
