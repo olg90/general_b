@@ -150,10 +150,6 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
 ###############################################################################
 # Test 1
 
-#######################
-# Defaults
-
-#
 run_time = 60
 
 p1 = 0.1 # 0.2
@@ -183,8 +179,8 @@ flist = linspace(0,fmax,nsamples)
 
 # heatmap of pf for vth vs f
 
-xn,xmin,xmax,xlen='k1', 1, 40, 30
-yn,ymin,ymax,ylen='k2', 1, 40, 30
+xn,xmin,xmax,xlen='k1', 1, 20, 25
+yn,ymin,ymax,ylen='k2', 1, 20, 25
 
 # =============================================================================
 # xn,xmin,xmax,xlen='c1', 0.001, 0.04, 25
@@ -265,6 +261,7 @@ for i, x in enumerate(xs):
         t3list=[]
         for f in flist:
             t3 = run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t)
+            t3list.append(t3)
         r3 = get_rval(1/array(t3list))
         heatmap[i,j] = r3
     print('')
@@ -328,8 +325,6 @@ for i, x in enumerate(xs): # modify here j, X <--
             vth = x
         if yn == 'vth':
             vth = y
-            
-
 
         t3listeq=[]
         for f in flist:
@@ -338,8 +333,6 @@ for i, x in enumerate(xs): # modify here j, X <--
         r3 = get_rval(1/array(t3list))
         heatmapeq[i,j] = r3
     print('')    
-    
-    
 #%%
 fontsize = 20
 plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
@@ -359,7 +352,7 @@ plt.show()
 #%%
 # plot the data
 
-fontsize = 20
+fontsize = 10
 plt.subplot(1,2,1)
 plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
            extent=[xmin,xmax,ymin,ymax], 
@@ -386,3 +379,4 @@ plt.title('theoretical', fontsize=fontsize)
 plt.tick_params(axis='both', labelsize=fontsize)
 
 plt.show()
+#plt.savefig('./something2.eps')
