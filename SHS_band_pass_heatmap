@@ -390,33 +390,66 @@ plt.ylabel('inhibitory neurotransmitter\n'+ r'coefficient $c_i$, $vesicles/sec^{
 plt.tick_params(axis='both', labelsize=fontsize)
 plt.show()
             
+# =============================================================================
+# #%%
+# # plot the data
+# 
+# # plot the data
+# fontsize = 20
+# fig, axs = plt.subplots(1, 2)
+# 
+# # Plot simulations
+# axs[0].imshow(heatmap.T, origin='lower', cmap='viridis', 
+#            extent=[xmin, xmax, ymin, ymax], 
+#            aspect='auto', vmin=0, vmax=1)
+# 
+# axs[0].set_xlabel(r'                                 excitatory refilling rate $k_e$, $sec^{{-1}}$', fontsize=fontsize)
+# axs[0].set_ylabel('inhibitory refilling\n' + r'rate $k_i$, $sec^{-1}$', fontsize=fontsize)
+# axs[0].tick_params(axis='both', labelsize=fontsize)
+# axs[0].set_title('simulations', fontsize=fontsize)
+# 
+# # Plot theoretical
+# im = axs[1].imshow(heatmapeq.T, origin='lower', cmap='viridis', 
+#            extent=[xmin, xmax, ymin, ymax], 
+#            aspect='auto', vmin=0, vmax=1)
+# 
+# cbar = fig.colorbar(im, ax=axs[1], fraction=0.05, pad=0.04) # Adjust fraction and pad to fit
+# cbar_label = 'peak drop percentage'
+# cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=30)
+# cbar.ax.tick_params(labelsize=fontsize)
+# 
+# axs[1].set_yticks([]) # Remove y ticks
+# axs[1].set_title('theoretical', fontsize=fontsize)
+# axs[1].tick_params(axis='both', labelsize=fontsize)
+# 
+# plt.show()
+# 
+# #plt.savefig('./something2.eps')
+# =============================================================================
+
 #%%
 # plot the data
-fontsize = 10
-plt.subplot(1,2,1)
-plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
-           extent=[xmin,xmax,ymin,ymax], 
-           aspect='auto',
-           vmin=0, vmax=1)
+fontsize = 20
 
-plt.xlabel(r'                                 excitatory refilling rate $k_e$, $sec^{{-1}}$', fontsize = fontsize)
-plt.ylabel('inhibitory refilling\n'+r'rate $k_i$, $sec^{{-1}}$', fontsize = fontsize)
+# Plot simulations
+im=plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
+           extent=[xmin, xmax, ymin, ymax], 
+           aspect='auto', vmin=0, vmax=1)
+
+plt.xlabel(r'                                 excitatory refilling rate $k_e$, $sec^{{-1}}$', fontsize=fontsize)
+plt.ylabel('inhibitory refilling\n' + r'rate $k_i$, $sec^{-1}$', fontsize=fontsize)
 plt.tick_params(axis='both', labelsize=fontsize)
-plt.title('simulations', fontsize=fontsize)
 
-plt.subplot(1,2,2)
-plt.imshow(heatmapeq.T, origin='lower', cmap='viridis', 
-           extent=[xmin,xmax,ymin,ymax], 
-           aspect='auto',
-           vmin=0, vmax=1)
-cbar = plt.colorbar()
-cbar_label = 'percentage drop from peak\n firing frequency at $500$ $Hz$'
-cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=50)  # Rotate label by 270 degrees
+# Add colorbar to the main plot
+cbar = plt.colorbar(im, fraction=0.05, pad=0.04) # Adjust fraction and pad to fit
+cbar_label = 'peak drop percentage'
+cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=30)
 cbar.ax.tick_params(labelsize=fontsize)
-plt.yticks([])
-plt.title('theoretical', fontsize=fontsize)
-
-plt.tick_params(axis='both', labelsize=fontsize)
 
 plt.show()
+
 #plt.savefig('./something2.eps')
+
+def plotfunction(k1, k2, c1, c2, M1, M2, vth, tauv):
+    
+    
