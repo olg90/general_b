@@ -1,0 +1,203 @@
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log,around, linspace, isnan, zeros, arange
+from numpy.random import exponential, binomial
+import sys
+
+import matplotlib.pyplot as plt
+
+
+# =============================================================================
+# def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
+#     # SHS model
+#     current_time = 0
+#     v3 = 0
+#     n1 = 0
+#     n2 = 0
+#     AP_times3 = []
+#     t_measure = delta_t
+#     while current_time < run_time:
+#         t0=exponential(1./f)
+#         t1=exponential(1./(k1*(M1-n1)+1e-10))
+#         t2=exponential(1./(k2*(M2-n2)+1e-10))
+#         t3=exponential(1./f)
+#         if t0<t1 and t0<t2 and t0<t3:
+#             t_min=t0
+#             b1 = binomial(n1, p1) # Number released
+#             n1-=b1
+#             v3+=c1*b1
+#             if v3>vth3:
+#                 AP_times3.append(current_time)
+#                 v3 = 0
+#         elif t1<t0 and t1<t2 and t1<t3:
+#             t_min=t1
+#             if n1 < M1:
+#                 n1+=1
+#         elif t2<t0 and t2<t1 and t2<t3:
+#             t_min=t2
+#             if n2 < M2:
+#                 n2+=1
+#         elif t3<t0 and t3<t1 and t3<t2:
+#             t_min=t3
+#             b2 = binomial(n2, p2) # Number released
+#             n2-=b2
+#             v3-=c2*b2
+#         else:
+#             v3*=exp(-t_min/tau3)
+#         current_time += t_min
+#         t_measure -= t_min
+#         if t_measure == 0:
+#             t_measure = delta_t
+#     if len(AP_times3) < 2:
+#         Tmean = nan
+#         CVT2 = nan
+#     else:
+#         Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
+#         CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
+#     return Tmean, CVT2
+# =============================================================================
+
+# Test that models the real thing occcurring
+def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t):
+    current_time = 0
+    v2 = 0
+    v3 = 0
+    n1 = 0
+    n2 = 0
+    AP_times3 = []
+    t_measure = delta_t
+    while current_time < run_time:
+        t0=exponential(1./f)
+        t1=exponential(1./(k1*(M1-n1)+1e-10))
+        t2=exponential(1./(k2*(M2-n2)+1e-10))
+        if t0<t1 and t0<t2:
+            t_min=t0
+            b1 = binomial(n1, p1) # Number released
+            n1-=b1
+            v3+=c1*b1
+            v2+=c1*b1
+            if v2 >= vth2:
+                b2 = binomial(n2, p2) # Number released
+                n2-=b2         
+                v3-= c2*b2
+                v2 = 0
+            if v3>vth3:
+                AP_times3.append(current_time)
+                v3 = 0
+        elif t1<t0 and t1<t2:
+            t_min=t1
+            if n1 < M1:
+                n1+=1
+        elif t2<t0 and t2<t1:
+            t_min=t2
+            if n2 < M2:
+                n2+=1          
+        else:
+            v3*=exp(-t_min/tau3)
+            v2*=exp(-t_min/tau2)
+        current_time += t_min
+        t_measure -= t_min   
+        if t_measure == 0:
+            t_measure = delta_t
+# =============================================================================
+#     if len(inter_AP_times3) < 2:
+#         mean_inter_AP_time3 = nan
+#         CVT23 = nan
+#     else:
+#         mean_inter_AP_time3 = mean(inter_AP_times3)
+#         CVT23 = var(inter_AP_times3) / mean_inter_AP_time3**2
+#     return [mean_inter_AP_time3, CVT23]
+# =============================================================================
+    return mean(diff(AP_times3)[int(0.3*(len(AP_times3)-1)):])
+
+
+def get_rval(ts):
+    a = [x for x in ts if isnan(x) == False]
+    if len(a) == 0:
+        return nan
+    else:
+        rval = 1-a[-1]/max(a)
+        if rval < 0 or rval > 1:
+            return nan
+        else:
+            return rval
+
+# =============================================================================
+# def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, tau2, vth3, vth2):
+#     pi=1
+#     b1ss = p1*k1*M1/(k1 + f*p1 + f*p1*pi)
+#     b2ss = p2*(k2*M2)/(k2 + f*p2*pi)
+#     vat = c1*f*b1ss - c2*f*b2ss*pi
+#     return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
+# =============================================================================
+
+# =============================================================================
+# def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
+#     
+#     
+#     numerator = f * log((f * (-c2 * k2 * M2 * (k1 + f * p1) * p2 + c1 * k1 * M1 * p1 * (k2 + f * p2) * tauv) /
+#                    (c1 * f * k1 * M1 * p1 * (k2 + f * p2) * tauv - (k1 + f * p1) * 
+#                    (c2 * f * k2 * M2 * p2 * tauv + k2 * vth + f * p2 * vth))))
+# 
+#     return tauv * numerator
+# =============================================================================
+
+def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tauv, vth):
+    return tauv * log(1 / (1 - vth / ((c1*f*p1*k1*M1/(k1 + f*p1) - c2*f*p2*k2*M2/(k2 + f*p2)) * tauv)))
+
+
+import numpy as np
+
+def largest_stretch(arr):
+    nonnan_indices = np.where(~np.isnan(arr))[0]
+    if len(nonnan_indices) == 0:
+        return arr
+    diff_indices = np.diff(nonnan_indices)
+    stretches = [stretch for stretch in np.split(nonnan_indices, np.where(diff_indices != 1)[0] + 1) if len(stretch) > 2]
+    if not stretches:
+        return arr
+    largest_stretch = max(stretches, key=len)
+    arr[:largest_stretch[0]] = np.nan
+    arr[largest_stretch[-1] + 1:] = np.nan
+    return arr
+
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+# Test 1
+
+run_time = 60
+
+p1 = 0.1 # 0.2
+p2 = 0.005 # 0.02
+
+M1 = 30 # 100
+M2 = 100 # 100
+
+c1 = 0.01075 # 0.01
+c2 = 0.05 # 0.01
+
+k1 = 20 # 1
+k2 = 100 # 10
+
+tau2 = 100000
+vth2 = 0.00001
+
+tau3 = 1 # 1
+vth3 = 0.2 #0.2
+
+delta_t = 0.01
+
+fmax=500
+nsamples=100
+flist = linspace(0,fmax,nsamples)
+
+tlist=[]
+i=0
+for f in flist:
+    print(i/len(flist))
+    tlist.append(run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau2, tau3, vth2, vth3, delta_t))
+    i+=1
+    
+plt.plot(flist,1/array(tlist))
