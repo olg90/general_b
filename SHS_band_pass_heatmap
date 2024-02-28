@@ -210,7 +210,7 @@ vth3 = 0.2 #0.2
 
 ###############################################################################
 
-vth2 = 0.025
+vth2 = 0.000075
 tau2 = 1
 
 ###############################################################################
@@ -379,8 +379,10 @@ for i, x in enumerate(xs): # modify here j, X <--
     
 # plot the data
 fontsize = 20
-
+#%%
 # Plot simulations
+plt.figure()
+plt.title(r'$v_{{th,2}}$={} $volts$'.format(vth2), fontsize=fontsize)
 im=plt.imshow(heatmap.T, origin='lower', cmap='viridis', 
            extent=[xmin, xmax, ymin, ymax], 
            aspect='auto', vmin=0, vmax=1)
@@ -456,12 +458,14 @@ plt.show()
 
 #%%
 
-import os
-os.chdir(r'C:\Users\olive\OneDrive\Desktop\PhD\Research\Neuron')
-import numpy as np
-np.save('heatmapvth2_0_001', heatmap)
-
-plt.savefig
+# =============================================================================
+# import os
+# os.chdir(r'C:\Users\olive\OneDrive\Desktop\PhD\Research\Neuron')
+# import numpy as np
+# np.save('heatmapvth2_0_001', heatmap)
+# 
+# plt.savefig
+# =============================================================================
 
 
     
