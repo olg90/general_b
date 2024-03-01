@@ -1,0 +1,54 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define parameters
+ce = 5
+ci = 1
+pe = 0.5
+pi = 1
+ke = 20
+ki = 200
+
+# Define the function
+def density_function(Me, Mi):
+    condition1 = ce * Me * pe > ci * Mi * pi
+    condition2 = ce * ke * Me < ci * ki * Mi
+    return 1 if condition1 and condition2 else 0
+
+# Generate data
+Me_values = np.linspace(1, 100, 500)
+Mi_values = np.linspace(1, 100, 500)
+density_data = np.array([[density_function(Me, Mi) for Me in Me_values] for Mi in Mi_values])
+
+# Plot
+plt.figure(figsize=(6, 6))
+plt.imshow(density_data, extent=[1, 100, 1, 100], cmap='binary', origin='lower', aspect='auto')
+plt.xlabel('Me', fontsize=14)
+plt.ylabel('Mi', fontsize=14)
+plt.title('Band-pass region (black)', fontsize=16)
+plt.tick_params(axis='both', direction='in', labelsize=12)
+
+# Plot inequality lines
+x = np.linspace(1, 100, 100)
+y1 = (ce * pe / (ci * pi)) * x
+y2 = (ce * ke / (ci * ki)) * x
+plt.plot(x, y1, color='red', linestyle='--', 
+         label=r'$ce \cdot Me \cdot pe > ci \cdot Mi \cdot pi$', linewidth=3)
+plt.plot(x, y2, color='blue', linestyle='--', 
+         label=r'$ce \cdot ke \cdot Me < ci \cdot ki \cdot Mi$',linewidth=3)
+
+# Annotate equations with matching colors
+plt.text(60, 20, r'$ce \cdot Me \cdot pe > ci \cdot Mi \cdot pi$', 
+         fontsize=12, color='red', rotation=45)
+plt.text(10, 80, r'$ce \cdot ke \cdot Me < ci \cdot ki \cdot Mi$', 
+         fontsize=12, color='blue', rotation=45)
+
+plt.text(40, 55, 'Band-pass\n   region', 
+         fontsize=30, color='white', rotation=0)
+
+
+plt.ylim([0, 100])
+plt.xlim([0,100])
+
+plt.tight_layout()
+plt.show()
