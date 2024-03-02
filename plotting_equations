@@ -1,56 +1,82 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Define constant
+def condition_1(ce, Me, pe, ci, Mi, pi):
+    return ce * Me * pe > ci * Mi * pi
+
+def condition_2(ce, Me, pe, ci, Mi, pi, tauv, vth):
+    A = (np.sqrt(ce*Me*pe)-np.sqrt(ci*Mi*pi))**2*tauv/vth
+    return (ke * pe - ke * pi) * (ki * ke * A - (ki * pe - ke * pi)) > 0
+
+def condition_3(ce, Me, ke, ci, Mi, ki):
+    return ce * Me * ke - ci * Mi * ki <= vth / tauv
+
+def compute_plot_data():
+    Me_values, Mi_values = np.meshgrid(np.linspace(0, 80, 1000), np.linspace(0, 100, 1000))
+
+    plot_data_1 = condition_1(ce, Me_values, pe, ci, Mi_values, pi)
+    plot_data_2 = condition_2(ce, Me_values, pe, ci, Mi_values, pi, tauv, vth)
+    plot_data_3 = condition_3(ce, Me_values, ke, ci, Mi_values, ki)
+
+    # Find the intersection of the three conditions
+    intersection_data = plot_data_1 & plot_data_2 & plot_data_3
+
+    return Me_values, Mi_values, intersection_data
+
+
+ce = 0.01
+ci = 0.02
+pe = 0.3
+pi = 0.01
+ke = 10
+ki = 3.5
+tauv = 1
+vth = 2
+
+# =============================================================================
+# ce = 0.4 # weird one
+# ci = 0.3
+# pe = 0.3
+# pi = 0.2
+# ke = 1
+# ki = 1.2
+# tauv = 1
+# vth = 5
+# =============================================================================
+
+# Plot the contours of f(x, y) = c1 and g(x, y) = c2 on the same figure
+fig, ax = plt.subplots(figsize=(8, 8))
+
+Me_values, Mi_values, intersection_data = compute_plot_data()
+lw=15
+
+# Plot the region where all three inequalities are satisfied (intersection)
+ax.imshow(intersection_data.T, extent=[Mi_values.min(), Mi_values.max(), Me_values.min(), Me_values.max()],
+           cmap='binary', origin='lower', alpha=1)
+upper_limit_contour = plt.contour(Mi_values, Me_values, -ce * Me_values * pe + ci * Mi_values * pi, 
+                                  levels=[0], colors='green', linewidths=lw)
+
+upper_limit_contour = plt.contour(Mi_values, Me_values,  ci * Mi_values * ki - ce * Me_values * ke + vth / tauv, 
+                                  levels=[0], colors='blue', linewidths=lw)
+
+
+A = (np.sqrt(ce*Me_values*pe)-np.sqrt(ci*Mi_values*pi))**2*tauv/vth
+
+upper_limit_contour = plt.contour(Mi_values, Me_values, (ke * pe - ke * pi) * ((ki * ke )* A - (ki * pe - ke * pi)), 
+                                  levels=[0], colors='red', linewidths=lw)
+
 fontsize = 20
+fn = 'Arial'
+plt.text(60, 50, 'band-pass effects\noccur here', fontsize=fontsize, color='white', 
+         fontname=fn, rotation=0)
+plt.text(30, 5, r'$c_eM_ep_e=c_iM_ip_i$', fontsize=fontsize, color='green', rotation=5, fontname=fn)
+plt.text(25, 45, r'$c_eM_ek_e-\frac{v_{{th}}}{\tau_v}=c_iM_ik_i$', 
+         fontsize=fontsize, color='blue', rotation=37.5, fontname=fn)
+plt.text(15, 20, r'$(k_e p_i - p_e k_i)(k_ek_iA-(k_e p_i - k_i p_e))=0$', 
+         fontsize=fontsize, color='red', rotation=10, fontname=fn)
 
-# Define parameters
-ce = 5
-ci = 1
-pe = 0.5
-pi = 1
-ke = 20
-ki = 200
 
-# Define the function
-def density_function(Me, Mi):
-    condition1 = ce * Me * pe > ci * Mi * pi
-    condition2 = ce * ke * Me < ci * ki * Mi
-    return 1 if condition1 and condition2 else 0
-
-# Generate data
-Me_values = np.linspace(1, 100, 500)
-Mi_values = np.linspace(1, 100, 500)
-density_data = np.array([[density_function(Me, Mi) for Me in Me_values] for Mi in Mi_values])
-
-# Plot
-plt.figure(figsize=(6, 6))
-plt.imshow(density_data, extent=[1, 100, 1, 100], cmap='binary', origin='lower', aspect='auto')
-plt.xlabel('Me', fontsize=fontsize)
-plt.ylabel('Mi', fontsize=fontsize)
-plt.title('Band-pass region', fontsize=fontsize)
-plt.tick_params(axis='both', direction='in', labelsize=fontsize)
-
-# Plot inequality lines
-x = np.linspace(1, 100, 100)
-y1 = (ce * pe / (ci * pi)) * x
-y2 = (ce * ke / (ci * ki)) * x
-plt.plot(x, y1, color='red', linestyle='--', 
-         label=r'$ce \cdot Me \cdot pe > ci \cdot Mi \cdot pi$', linewidth=3)
-plt.plot(x, y2, color='blue', linestyle='--', 
-         label=r'$ce \cdot ke \cdot Me < ci \cdot ki \cdot Mi$', linewidth=3)
-
-# Annotate equations with matching colors
-plt.text(4, 30, r'$c_e M_e p_e > c_i M_i p_i$', 
-         fontsize=fontsize, color='red', rotation=70)
-plt.text(40, 15, r'$c_e k_e  M_e < c_i k_i M_i$', 
-         fontsize=fontsize, color='blue', rotation=25)
-
-plt.text(40, 55, 'Band-pass\n   region', 
-         fontsize=fontsize+10, color='white', rotation=0)
-
-plt.ylim([0, 100])
-plt.xlim([0, 100])
-
-plt.tight_layout()
+plt.tick_params(axis='both', labelsize=fontsize)
+ax.set_xlabel("# inhibitory docking sites", fontsize=fontsize)
+ax.set_ylabel("# excitatory docking sites", fontsize=fontsize)
 plt.show()
