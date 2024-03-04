@@ -1,0 +1,114 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def condition_1(ce1, Me1, pe1, ce2, ci, Me2, Mi, pe2, pi, vth2):
+    return ce1 * Me1 * pe1 * vth2 > ce2 * ci * Me2 * Mi * pe2 * pi
+
+def condition_2(k, ce1, Me1, pe1, ce2, ci, Me2, Mi, pe2, pi, vth2, tauv):
+    numerator = (np.sqrt(ce2 * ci * Me2 * Mi * pe2 * pi) + np.sqrt(ce1 * Me1 * pe1 * vth2))**2
+    denominator = ((pe1 - pe2) * vth2 - ce2 * Me2 * pe2 * pi)
+    return k * numerator / denominator > vth / tauv
+
+def condition_3(ce1, k, Me1, ce2, ci, Me2, Mi, pi, vth2, tauv):
+    return ce1 * k * Me1 <= (vth / tauv) + ((ce2 * ci * k * Me2 * Mi * pi) / (ce2 * Me2 * pi + vth2))
+
+def compute_plot_data(ce1,ce2,ci,pe1,pi,pe2,k,Mi,tauv,vth):
+    Me1_values, Me2_values = np.meshgrid(np.linspace(0, 100, 1000), np.linspace(0, 100, 100))
+
+    plot_data_1 = condition_1(ce1, Me1_values, pe1, ce2, ci, Me2_values, Mi, pe2, pi, vth2)
+    plot_data_2 = condition_2(k, ce1, Me1_values, pe1, ce2, ci, Me2_values, Mi, pe2, pi, vth2, tauv)
+    plot_data_3 = condition_3(ce1, k, Me1_values, ce2, ci, Me2_values, Mi, pi, vth2, tauv)
+
+    # Find the intersection of the three conditions
+    intersection_data = plot_data_1 & plot_data_2 & plot_data_3
+
+    return Me1_values, Me2_values, plot_data_1, plot_data_2, plot_data_3, intersection_data
+
+ce1 = 0.01
+ce2 = 0.05
+ci = 0.02
+pe1 = 0.5
+pe2 = 0.2
+pi = 0.01
+k = 100
+Mi = 100
+tauv = 1
+vth = 0.65
+
+k = 1.0
+vth2 = 0.2
+
+lw=10
+fontsize = 15
+fn='Arial'
+
+
+# Plot individual conditions on the first three subplots
+Me1_values, Me2_values, plot_data_1, plot_data_2, plot_data_3, intersection_data = compute_plot_data(ce1, ce2, ci, pe1, pi, pe2, k, Mi, tauv, vth)
+# Plot the region where all three conditions are satisfied on the fourth subplot
+plt.imshow(intersection_data.T, extent=[Me2_values.min(), Me2_values.max(), Me1_values.min(), Me1_values.max()],
+           cmap='binary', origin='lower', alpha=1)
+plt.xlabel("# inhibitory docking sites (Me2)", fontsize=fontsize)
+plt.ylabel("# excitatory docking sites (Me1)", fontsize=fontsize)
+plt.tick_params(axis='both', labelsize=fontsize)
+
+
+plt.contour(Me2_values, Me1_values,ce1 * Me1_values * pe1 * vth2 - ce2 * ci * Me2_values * Mi * pe2 * pi , 
+                                  levels=[0], colors='red', linewidths=lw)
+plt.contour(Me2_values, Me1_values, -( ce1 * k * Me1_values)+ (vth / tauv) + ((ce2 * ci * k * Me2_values * Mi * pi) / (ce2 * Me2_values * pi + vth2)) , 
+                                  levels=[0], colors='green', linewidths=lw)
+
+
+numerator = (np.sqrt(ce2 * ci * Me2_values * Mi * pe2 * pi) + np.sqrt(ce1 * Me1_values * pe1 * vth2))**2
+denominator = ((pe1 - pe2) * vth2 - ce2 * Me2_values * pe2 * pi)
+eq= k * numerator / denominator-vth / tauv 
+plt.contour(Me2_values, Me1_values,eq, 
+                                  levels=[0], colors='blue', linewidths=lw)
+
+plt.text(15, 30, 'band-pass\n   region', 
+         fontsize=fontsize+20, color='white', rotation=0, fontname=fn)
+
+# =============================================================================
+# # Create a 1x4 subplot
+# fig, axs = plt.subplots(1, 4, figsize=(20, 5))
+# 
+# axs[0].imshow(plot_data_1.T, extent=[Me2_values.min(), Me2_values.max(), Me1_values.min(), Me1_values.max()],
+#            cmap='binary', origin='lower', alpha=1)
+# axs[0].set_title('Condition 1')
+# axs[0].set_xlabel("# inhibitory docking sites (Me2)")
+# axs[0].set_ylabel("# excitatory docking sites (Me1)")
+# 
+# axs[1].imshow(plot_data_2.T, extent=[Me2_values.min(), Me2_values.max(), Me1_values.min(), Me1_values.max()],
+#            cmap='binary', origin='lower', alpha=1)
+# axs[1].set_title('Condition 2')
+# axs[1].set_xlabel("# inhibitory docking sites (Me2)")
+# axs[1].set_ylabel("# excitatory docking sites (Me1)")
+# 
+# axs[2].imshow(plot_data_3.T, extent=[Me2_values.min(), Me2_values.max(), Me1_values.min(), Me1_values.max()],
+#            cmap='binary', origin='lower', alpha=1)
+# axs[2].set_title('Condition 3')
+# axs[2].set_xlabel("# inhibitory docking sites (Me2)")
+# axs[2].set_ylabel("# excitatory docking sites (Me1)")
+# 
+# # Plot the region where all three conditions are satisfied on the fourth subplot
+# axs[3].imshow(intersection_data.T, extent=[Me2_values.min(), Me2_values.max(), Me1_values.min(), Me1_values.max()],
+#            cmap='binary', origin='lower', alpha=1)
+# axs[3].set_title('Intersection of Conditions')
+# axs[3].set_xlabel("# inhibitory docking sites (Me2)")
+# axs[3].set_ylabel("# excitatory docking sites (Me1)")
+# 
+# 
+# axs[3].contour(Me2_values, Me1_values,ce1 * Me1_values * pe1 * vth2 - ce2 * ci * Me2_values * Mi * pe2 * pi , 
+#                                   levels=[0], colors='red', linewidths=lw)
+# axs[3].contour(Me2_values, Me1_values, -( ce1 * k * Me1_values)+ (vth / tauv) + ((ce2 * ci * k * Me2_values * Mi * pi) / (ce2 * Me2_values * pi + vth2)) , 
+#                                   levels=[0], colors='green', linewidths=lw)
+# 
+# 
+# numerator = (np.sqrt(ce2 * ci * Me2_values * Mi * pe2 * pi) + np.sqrt(ce1 * Me1_values * pe1 * vth2))**2
+# denominator = ((pe1 - pe2) * vth2 - ce2 * Me2_values * pe2 * pi)
+# eq= k * numerator / denominator-vth / tauv 
+# axs[3].contour(Me2_values, Me1_values,eq, 
+#                                   levels=[0], colors='blue', linewidths=lw)
+# =============================================================================
+
+plt.show()
