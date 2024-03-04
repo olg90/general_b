@@ -1,0 +1,67 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define constants for the first function
+k = 10
+ki = 10
+pr = 0.15
+pi = 0.066
+M = 100
+Mi = 100
+c = 0.004
+ci = 0.15 # 0.125
+
+ke = 10
+pe = 0.1 # 0.08
+ce = 0.001
+Me = 100
+
+tauv2 = 100
+vth2 = 0.2
+
+# Define the functions
+def function1(f, c, k, M, pr):
+    return (c * f * k * M * pr) / (k + f * pr)
+
+def function2(f, ci, ki, Mi, pi, ke, pe, vth2, ce, Me, tauv2):
+    numerator = ce * f * ke * Me * pe * tauv2
+    denominator = ce * f * ke * Me * pe * tauv2 - (ke + f * pe) * vth2
+    return (ci * ki * Mi * pi) / (pi + ki * tauv2 * np.log(numerator / denominator))
+
+# Generate a range of f values
+fmin = (ke * vth2) / (pe * (ce * ke * Me * tauv2 - vth2))
+f_values = np.linspace(fmin, 500, 1000)
+
+# Calculate function values for each f value
+y1_values = function1(f_values, c, k, M, pr)
+y2_values = function2(f_values, ci, ki, Mi, pi, ke, pe, vth2, ce, Me, tauv2)
+
+# Plotting
+plt.plot(f_values, y1_values, color='red', label='(c f k M pr)/(k + f pr)')
+plt.plot(f_values, y2_values, color='blue', label='inhibitory')
+plt.plot(f_values, y1_values - y2_values, label='diff', color='black')
+
+# Plot vertical lines
+fm1 = (ki * pr * pe * vth2 * (ce * (c - ci) * Mi * pi + c * vth2) +
+       np.sqrt(c * ce * ci * ki**2 * Mi * pr * pe * pi * vth2 *
+               (ce * Mi * pe * pi - pr * vth2 + pe * vth2)**2)
+       ) / (pr * pe * (ce * ci * Mi * pr * pi * vth2 - c * pe * (ce * Mi * pi + vth2)**2))
+
+fm2 = (ki * pr * pe * vth2 * (ce * (c - ci) * Mi * pi + c * vth2) -
+       np.sqrt(c * ce * ci * ki**2 * Mi * pr * pe * pi * vth2 *
+               (ce * Mi * pe * pi - pr * vth2 + pe * vth2)**2)
+       ) / (pr * pe * (ce * ci * Mi * pr * pi * vth2 - c * pe * (ce * Mi * pi + vth2)**2))
+
+# =============================================================================
+# plt.axvline(fm1, color='green', linestyle='--', label='fm1')
+# plt.axvline(fm2, color='orange', linestyle='--', label='fm2')
+# =============================================================================
+
+# Add labels and legend
+plt.ylim([0, None])
+plt.xlabel('f')
+plt.ylabel('Function Values')
+plt.legend()
+
+# Show the plot
+plt.show()
