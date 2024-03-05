@@ -247,18 +247,36 @@ def get_equations(f, params):
 # Test 1
 
 # Values of c to test
-f_max = 100
-n_samples = 100
-f_val_list = np.linspace(0,f_max, n_samples)
+fmin = 1
+f_max = 50
+n_samples = 200
+f_val_listO = np.linspace(fmin,f_max, n_samples)
 
-run_time = 15
+run_time = 60*10
 
 M = 100
 pr = 0.2
-c = 0.001
-k = 100
-tauv = 1
+c = 0.003
+k = 1
+tauv = 5
 vth = 0.2
+
+
+#
+# =============================================================================
+# xname = 'k'
+# M = 100
+# pr = 0.2
+# c = 0.003
+# tauv = 5
+# vth = 0.2
+# 
+# x0=100
+# x1=0
+# Hx = 1.7
+# cx = 1
+# =============================================================================
+#
 
 delta_t = 0.01
 
@@ -269,69 +287,64 @@ mTe = []
 cs = []
 ce=[]
 
-ntimes = 2
-for ntime in range(ntimes):
-    mean_T_sim = []
-    CVT2_sim = []
 
-    for i, f_val in enumerate(f_val_list):
-        params = to_dict(run_time = run_time, f = f_val, Mu = M,
-                         pu = pr, cu = c, ku = k, 
-                         tauv = tauv, vth = vth, delta_t = delta_t)  
-        print(i/len(f_val_list))
-    
-        result = run_test(params)
+mean_T_sim = []
+CVT2_sim = []
 
-        mean_T_sim.append(result['mean_T'])
-        CVT2_sim.append(result['CVT2'])
+for i, f_val in enumerate(f_val_listO):
+    params = to_dict(run_time = run_time, f = f_val, Mu = M,
+                     pu = pr, cu = c, ku = k, 
+                     tauv = tauv, vth = vth, delta_t = delta_t)  
+# =============================================================================
+#         print(i/len(f_val_listO))
+# =============================================================================
 
-    # Equations
-    
-    mean_T_eq = []
-    CVT2_eq = []
+    result = run_test(params)
 
-    for f_val in f_val_list:
-        T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
-        mean_T_eq.append(T_mean_eq_val)
-        CVT2_eq.append(CVT2T_eq_val)
-        
-        
-    mTs.append(mean_T_sim)
-    mTe.append(mean_T_eq)
-    cs.append(CVT2_sim)
-    ce.append(CVT2_eq)
-    
+    mean_T_sim.append(result['mean_T'])
+    CVT2_sim.append(result['CVT2'])
 
-mean_T_sim = np.array(mTs)
-mean_T_eq = np.array(mTe)
-CVT2_sim = np.array(cs)
-CVT2_eq = np.array(ce)
+# Equations
 
-mean_T_sim = np.array(mean_T_sim)
-mean_T_eq = np.array(mean_T_eq)
-CVT2_sim = np.array(CVT2_sim)
-CVT2_eq = np.array(CVT2_eq)
+mean_T_eq = []
+CVT2_eq = []
 
-mean_T_sim = np.mean(mean_T_sim, axis = 0)
-mean_T_eq = np.mean(mean_T_eq, axis = 0)
-CVT2_sim = np.mean(CVT2_sim, axis = 0)
-CVT2_eq = np.mean(CVT2_eq, axis = 0)
+for f_val in f_val_listO:
+    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
+    mean_T_eq.append(T_mean_eq_val)
+    CVT2_eq.append(CVT2T_eq_val)
 
 
+mean_T_simO = np.array(mean_T_sim)
+mean_T_eqO = np.array(mean_T_eq)
+CVT2_simO = np.array(CVT2_sim)
+CVT2_eqO = np.array(CVT2_eq)
+
+Fo=1/mean_T_eqO
+
+fontsize = 15
 fig, ax = plt.subplots(1,2)
-ax[0].plot(f_val_list, 1/mean_T_sim, label = '<T> Simulations')
-ax[0].plot(f_val_list, 1/mean_T_eq, label = '<T> OL model')
-ax[0].set_xlabel('Action potential frequency, (Hz)')
-ax[0].set_ylabel('$\\langle T \\rangle$')
-ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
-ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
-ax[1].set_ylabel('$CV_{T}^2$')
-ax[0].legend()
-ax[1].legend()
+ax[0].plot(f_val_listO, 1/mean_T_simO, label = '1/<T> simulations')
+ax[0].plot(f_val_listO, 1/mean_T_eqO, label = '1/<T> theoretical')
+ax[0].set_xlabel('                                                 presynaptic firing frequency $f$, $Hz$', fontsize = fontsize)
+ax[0].set_ylabel('postsynaptic firing frequency $1/\\langle T \\rangle$', fontsize = fontsize)
+ax[1].plot(f_val_listO, CVT2_sim, label = 'CVT2 simulations')
+ax[1].plot(f_val_listO, CVT2_eq, label = 'CVT2 theoretical')
+ax[1].set_ylabel('noise $CV_{T}^2$', fontsize = fontsize)
+ax[0].legend(fontsize = fontsize-5)
+ax[1].legend(fontsize = fontsize-5)
+
+ax[0].tick_params(axis = 'both', labelsize = fontsize)
+ax[1].tick_params(axis = 'both', labelsize = fontsize)
+
+# =============================================================================
+# ax[0].set_xscale('log')
+# ax[1].set_xscale('log')
+# =============================================================================
+
+aval = 0.2
+ax[0].grid(True, alpha = aval)
+ax[1].grid(True, alpha = aval)
 
 plt.tight_layout()
 plt.show()
-
-
-# data is a list or array
-# time is the list of frequencies
