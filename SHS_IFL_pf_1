@@ -5,7 +5,7 @@ import cProfile
 
 import matplotlib.pyplot as plt
 
-def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
+def run_test(f, run_time, c, M, k1, pi, ci, k2, Mi, p2, tau3, vth3, delta_t):
     current_time = 0
     v3 = 0
     n1 = 0
@@ -14,30 +14,30 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
     t_measure = delta_t
     while current_time < run_time:
         t0=exponential(1./f)
-        t1=exponential(1./(k1*(M1-n1)+1e-10))
-        t2=exponential(1./(k2*(M2-n2)+1e-10))
+        t1=exponential(1./(k1*(M-n1)+1e-10))
+        t2=exponential(1./(k2*(Mi-n2)+1e-10))
         t3=exponential(1./f)
         if t0<t1 and t0<t2 and t0<t3:
             t_min=t0
-            b1 = binomial(n1, p1) # Number released
+            b1 = binomial(n1, pi) # Number released
             n1-=b1
-            v3+=c1*b1
+            v3+=c*b1
             if v3>vth3:
                 AP_times3.append(current_time)
                 v3 = 0
         elif t1<t0 and t1<t2 and t1<t3:
             t_min=t1
-            if n1 < M1:
+            if n1 < M:
                 n1+=1
         elif t2<t0 and t2<t1 and t2<t3:
             t_min=t2
-            if n2 < M2:
+            if n2 < Mi:
                 n2+=1     
         elif t3<t0 and t3<t1 and t3<t2:
             t_min=t3
             b2 = binomial(n2, p2) # Number released
             n2-=b2
-            v3-=c2*b2
+            v3-=ci*b2
         else:
             v3*=exp(-t_min/tau3)
         current_time += t_min
@@ -52,13 +52,13 @@ def run_test(f, run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t):
         CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
     return Tmean, CVT2
 
-def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, vth3):
-    vat = c1*f*p1*k1*M1/(k1 + f*p1) - c2*f*p2*k2*M2/(k2 + f*p2)
+def get_T_mean(f, c, ci, k1, k2, M, Mi, pi, p2, tau3, vth3):
+    vat = c*f*pi*k1*M/(k1 + f*pi) - ci*f*p2*k2*Mi/(k2 + f*p2)
     return tau3 * log(1 / (1 - vth3 / (vat * tau3)))
 
 # =============================================================================
-# def get_pi(f, c1, k1, M1, p1, vth2, tau2):
-#     return tauv * log(1/(1-(((k1 + f * p1)*vth2)/(c1 * f*k1*M1*p1*tau2))))
+# def get_pi(f, c, k1, M, pi, vth2, tau2):
+#     return tauv * log(1/(1-(((k1 + f * pi)*vth2)/(c * f*k1*M*pi*tau2))))
 # =============================================================================
     
 ###############################################################################
@@ -69,23 +69,21 @@ def get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, vth3):
 # Test 1
 
 #######################
-run_time = 60*60
+run_time = 15
 
-p1 = 0.1 # 0.1
-p2 = 0.001 # 0.001
+pi = 0.2 # 0.1
+p2 = 0.1 # 0.001
+M = 30 # 25
+Mi = 30 # 100
+c = 0.01 # 0.01
+ci = 0.0027 # 0.04
+tau3 = 1 # 1
+vth3 = 0.2 # 0.2
 
-M1 = 30 # 25
-M2 = 100 # 100
-
-c1 = 0.01 # 0.01
-c2 = 0.05 # 0.04
 
 k1 = 10 # 10
 k2 = 100 # 100
-
-tau3 = 1 # 1
-vth3 = 0.2 # 0.2
-delta_t = 0.01
+delta_t = 0.01 # 0.01
 
 fmax=500
 nsamples=100
@@ -94,13 +92,13 @@ flist = linspace(0,fmax,nsamples)
 ts,cs=[],[]
 for i in range(len(flist)):
     print(i/len(flist))
-    T,C = run_test(flist[i], run_time, c1, M1, k1, p1, c2, k2, M2, p2, tau3, vth3, delta_t)
+    T,C = run_test(flist[i], run_time, c, M, k1, pi, ci, k2, Mi, p2, tau3, vth3, delta_t)
     ts.append(T)
     cs.append(C)
 
 te=[]
 for f in flist:
-    te.append(get_T_mean(f, c1, c2, k1, k2, M1, M2, p1, p2, tau3, vth3))
+    te.append(get_T_mean(f, c, ci, k1, k2, M, Mi, pi, p2, tau3, vth3))
 
 plt.subplot(1,2,1)
 plt.plot(flist,1/array(ts))
