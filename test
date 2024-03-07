@@ -1,0 +1,70 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the function
+def get_F(f, c, ci, pr, pi, k, ki, M, Mi, tauv, vth):
+    h=f*c*pr*k*M/(f*pr+k)-f*ci*pi*ki*Mi/(f*pi+ki)
+    if h > vth/tauv:
+        return 1/(tauv*np.log(1/(1-vth/(h*tauv))))
+    else:
+        return np.nan
+
+# Define parameters
+
+c = 0.01
+ci = 0.01
+pr = 0.1
+pi = 0.01
+k = 10
+ki = 5
+M = 30
+Mi = 100
+tauv = 1
+vth = 0.2
+
+# Generate array of f values
+fm=500
+flist = np.linspace(0, fm, 1000000)
+
+# Calculate expression for each f value
+
+klist=[5,10,15,20]
+
+
+folist = [[get_F(f, c, ci, pr, pi, kval, ki, M, Mi, tauv, vth) for f in flist] for kval in klist]
+
+
+def first_non_nan_value(arr):
+    first_valid_index = np.where(~np.isnan(arr))[0]
+    if len(first_valid_index) == 0:
+        return None  # No non-NaN values found
+    else:
+        return arr[first_valid_index[0]]
+
+# Example usage
+arr = np.array([np.nan, np.nan, 3, 4, 5, np.nan, 7, 8, np.nan])
+first_value = first_non_nan_value(arr)
+print("First non-NaN value:", first_value)
+
+def last_non_nan_value(arr):
+    last_valid_index = np.where(~np.isnan(arr))[0]
+    if len(last_valid_index) == 0:
+        return None  # No non-NaN values found
+    else:
+        return arr[last_valid_index[-1]]
+
+# Example usage
+arr = np.array([1, 2, np.nan, 4, np.nan, 6, np.nan])
+last_value = last_non_nan_value(arr)
+print("Last non-NaN value:", last_value)
+
+# Plot the result
+for i,ff in enumerate(folist):
+    plt.plot(flist, ff, label='k={}'.format(klist[i]))
+plt.ylim([0, None])
+plt.xlim([0, fm])
+plt.xlabel('input frequency')
+plt.ylabel('output frequency')
+plt.title('output frequency of IFL, varying the exc. refilling rate')
+plt.legend()
+plt.show()
