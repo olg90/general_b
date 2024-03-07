@@ -1,83 +1,87 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def condition_1(c, Me, pr, ci, Mi, pi):
-    return c * Me * pr > ci * Mi * pi
+def condition_1(c, M, pr, ci, Mi, pi):
+    return c * M * pr > ci * Mi * pi
 
-def condition_2(c, Me, pr, ci, Mi, pi, tauv, vth):
-    A = (np.sqrt(c*Me*pr)-np.sqrt(ci*Mi*pi))**2*tauv/vth
-    return (k * pr - k * pi) * (ki * k * A - (ki * pr - k * pi)) > 0
+def condition_2(c, M, pr, ci, Mi, pi, tauv, vth, k, ki):
+    return k*ki*(np.sqrt(ci*Mi*pi)+np.sqrt(c*M*pr))**2/(ki*pr-k*pi) > vth/tauv
 
-def condition_3(c, Me, k, ci, Mi, ki):
-    return c * Me * k - ci * Mi * ki <= vth / tauv
+def condition_3(c, M, k, ci, Mi, ki):
+    return ci*ki**2*Mi*pr<c*k**2*M*pi
 
-def compute_plot_data():
-    Me_values, Mi_values = np.meshgrid(np.linspace(0, 80, 1000), np.linspace(0, 100, 1000))
+def compute_plot_data(ce,ci,pr,pi,Me,Mi,tauv,vth):
+    k_values, ki_values = np.meshgrid(np.linspace(0, 80, 1000), np.linspace(0, 100, 1000))
 
-    plot_data_1 = condition_1(c, Me_values, pr, ci, Mi_values, pi)
-    plot_data_2 = condition_2(c, Me_values, pr, ci, Mi_values, pi, tauv, vth)
-    plot_data_3 = condition_3(c, Me_values, k, ci, Mi_values, ki)
+    plot_data_1 = condition_1(c, M, pr, ci, Mi, pi)
+    plot_data_2 = condition_2(c, M, pr, ci, Mi, pi, tauv, vth, k_values, ki_values)
+    plot_data_3 = condition_3(c, M, k_values, ci, Mi, ki_values)
 
     # Find the intersection of the three conditions
     intersection_data = plot_data_1 & plot_data_2 & plot_data_3
 
-    return Me_values, Mi_values, intersection_data
+    return k_values, ki_values, intersection_data
 
 
-c = 0.013
-ci = 0.02
-pr = 0.3
-pi = 0.01
-k = 10
-ki = 8
-tauv = 2
-vth = 2
+pr = 0.2 # 0.1
+pi = 0.1 # 0.001
+M = 30 # 25
+Mi = 30 # 100
+c = 0.01 # 0.01
+ci = 0.0025 # 0.04
+tauv = 1 # 1
+vth = 0.2 # 0.2
 
-# =============================================================================
-# c = 0.4 # weird one
-# ci = 0.3
-# pr = 0.3
-# pi = 0.2
-# k = 1
-# ki = 1.2
-# tauv = 1
-# vth = 5
-# =============================================================================
+#
+
+# p1 = 0.1 # 0.1
+# p2 = 0.001 # 0.001
+
+# M1 = 30 # 25
+# M2 = 100 # 100
+
+# c1 = 0.01 # 0.01
+# c2 = 0.05 # 0.04
+
+# k1 = 10 # 10
+# k2 = 100 # 100
+
+#
 
 # Plot the contours of f(x, y) = c1 and g(x, y) = c2 on the same figure
-fig, ax = plt.subplots(figsize=(8, 8))
 
-Me_values, Mi_values, intersection_data = compute_plot_data()
-lw=15
+
+k_values, ki_values, intersection_data = compute_plot_data(c, ci, pr, pi, M, Mi, tauv, vth)
+lw=3
 
 # Plot the region where all three inequalities are satisfied (intersection)
-ax.imshow(intersection_data.T, extent=[Mi_values.min(), Mi_values.max(), Me_values.min(), Me_values.max()],
+plt.imshow(intersection_data.T, extent=[ki_values.min(), ki_values.max(), k_values.min(), k_values.max()],
            cmap='binary', origin='lower', alpha=1)
-upprr_limit_contour = plt.contour(Mi_values, Me_values, -c * Me_values * pr + ci * Mi_values * pi, 
-                                  levels=[0], colors='green', linewidths=lw)
 
-upprr_limit_contour = plt.contour(Mi_values, Me_values,  ci * Mi_values * ki - c * Me_values * k + vth / tauv, 
+upprr_limit_contour = plt.contour(ki_values, k_values, c*k_values**2*M*pi-ci*ki_values**2*Mi*pr, 
                                   levels=[0], colors='blue', linewidths=lw)
 
 
-A = (np.sqrt(c*Me_values*pr)-np.sqrt(ci*Mi_values*pi))**2*tauv/vth
-
-upprr_limit_contour = plt.contour(Mi_values, Me_values, (k * pr - k * pi) * ((ki * k )* A - (ki * pr - k * pi)), 
+upprr_limit_contour = plt.contour(ki_values, k_values, k_values*ki_values*(
+    np.sqrt(ci*Mi*pi)+np.sqrt(c*M*pr))**2/(ki_values*pr-k_values*pi) > vth/tauv, 
                                   levels=[0], colors='red', linewidths=lw)
 
 fontsize = 20
 fn = 'Arial'
-plt.text(42.5, 35, 'band-pass\n   region', fontsize=fontsize+30, color='white', 
-         fontname=fn, rotation=0)
 
-plt.text(45, 5, r'$cMp_r=c_iM_ip_i$', fontsize=fontsize, color='green', rotation=5, fontname=fn)
-plt.text(15, 37, r'$cMk-\frac{v_{{th}}}{\tau_v}=c_iM_ik_i$', 
-         fontsize=fontsize, color='blue', rotation=52, fontname=fn)
-plt.text(20, 8, r'$(k p_i - p_r k_i)(kk_iA-(k p_i - k_i p_r))=0$', 
-         fontsize=fontsize, color='red', rotation=8, fontname=fn)
+# plt.text(42.5, 15, 'band-pass region', fontsize=fontsize, color='white', 
+#          fontname=fn, rotation=0)
+
+# plt.text(15, 37, r'$cMk-\frac{v_{{th}}}{\tau_v}=c_iM_ik_i$', 
+#          fontsize=fontsize, color='blue', rotation=0, fontname=fn)
+# plt.text(20, 5, r'$(k p_i - p_r k_i)(kk_iA-(k p_i - k_i p_r))=0$', 
+#          fontsize=fontsize, color='red', rotation=0, fontname=fn)
 
 
 plt.tick_params(axis='both', labelsize=fontsize)
-ax.set_xlabel("# inhibitory docking sites", fontsize=fontsize)
-ax.set_ylabel("# excitatory docking sites", fontsize=fontsize)
+plt.xlabel("inhibitory refilling rate", fontsize=fontsize)
+plt.ylabel("excitatory refilling rate", fontsize=fontsize)
+
+
+
 plt.show()
