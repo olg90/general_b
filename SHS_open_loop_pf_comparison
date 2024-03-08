@@ -1,158 +1,42 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import bayes_mvs as bayesest
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
+from numpy.random import exponential, binomial
 
-def get_time_to(text, f, ku, Mu, nu):
-    
-    if text == 'f':
-        return np.random.exponential(1./f)
-    
-    if text == 'nu':
-        if Mu > nu:
-            return np.random.exponential(1./(ku*(Mu-nu)))
-        else:
-            return np.inf
-    
-
-def get_arg_type(i):
-    
-    if i == 0:
-        return 'f'
-    if i == 1:
-        return 'nu'
-    if i == 2:
-        return 'measure'
-
-def to_dict(**x):
-    return x
-
-def run_test(args):
-    
-    # Set up all parameters
-
-    run_time = args['run_time']
-    f = args['f']
-
-    ku = args['ku']
-    Mu = args['Mu']
-    pu = args['pu']
-    cu = args['cu']
-    
-    tauv = args['tauv']
-    vth = args['vth']
-
-    delta_t = args['delta_t']
-    
+def run_test(f, run_time, c, M, k, pr, tau3, vth3, delta_t):
     current_time = 0
-    v_membrane = 0
-    
-    nu = 0
-
-    v_history = [[0, current_time]] # data array
-    AP_times = []
-
-    preneuron_firing_history = []
-    
+    v3 = 0
+    n1 = 0
+    AP_times3 = []
     t_measure = delta_t
-    
-    # Run the main test
-    
     while current_time < run_time:
-        
-        # Get the next event time
-        time_to_f = get_time_to('f', f, ku, Mu, nu)
-        time_to_nu = get_time_to('nu', f, ku, Mu, nu)
-            
-        times_array = np.array([time_to_f, time_to_nu, t_measure])
-    
-        # Find the minimum of the times and choose that time
-        t_min_arg = np.argmin(times_array)
-        arg_type = get_arg_type(t_min_arg)
-        t_min = times_array[t_min_arg]
-    
-        # If the event is a firing
-        if arg_type == 'f':
-            preneuron_firing_history.append(current_time)
-
-            b_u = np.random.binomial(nu, pu) # Number released
-            nu -= b_u
-
-            voltage_addition = cu*b_u
-            v_membrane += voltage_addition
-            
-            v_history.append([v_membrane, current_time])
-            
-            if v_membrane >= vth:
-                
-                v_membrane = 0
-                AP_times.append(current_time)
-
-            current_time += t_min
-            t_measure -= t_min
-            
-        # If we're refilling 
-        elif arg_type == 'nu':
-            
-            if nu < Mu:
-                nu += 1            
-            
-            current_time += t_min
-            t_measure -= t_min
-            
+        t0=exponential(1./f)
+        t1=exponential(1./(k*(M-n1)+1e-10))
+        if t0<t1 and t0<t1:
+            t_min=t0
+            b1 = binomial(n1, pr) # Number released
+            n1-=b1
+            v3*=exp(-t_min/tau3)
+            v3+=c*b1
+            if v3>vth3:
+                AP_times3.append(current_time)
+                v3 = 0
         else:
-            v_membrane = v_membrane*np.exp(-t_min/tauv)
-            
-            v_history.append([v_membrane, current_time])
-    
-            current_time += t_min
+            t_min=t1
+            v3*=exp(-t_min/tau3)
+            if n1 < M:
+                n1+=1
+        current_time += t_min
+        t_measure -= t_min
+        if t_measure == 0:
             t_measure = delta_t
-            
-    v_history = np.array(v_history) # data array
-    AP_times = np.array(AP_times)
-    
-    inter_AP_times = np.diff(AP_times)
-    if len(inter_AP_times) < 2:
-        mean_inter_AP_time = np.nan
-        CVT2 = np.nan
+    if len(AP_times3) < 2:
+        Tmean = nan
+        CVT2 = nan
     else:
-        mean_inter_AP_time = np.mean(inter_AP_times)
-        CVT2 = np.var(inter_AP_times) / mean_inter_AP_time**2
-    
-    return {'v_history': np.array(v_history),
-            'AP_times':np.array(AP_times),
-            'inter_AP_times':np.array(inter_AP_times),
-            'mean_T':mean_inter_AP_time, 
-            'CVT2':CVT2}
-
-# =============================================================================
-# def get_T_mean(k, f, pr, c, M, tauv, vth):
-#     return tauv * np.log(1 / (1 - ((k + f * pr) * vth) / (c * f * k * M * pr * tauv)))
-#
-# def get_CVT2(k, f, pr, c, M, tauv, vth):
-#     numerator = -((k + f * pr) * (-1 + k * (-1 + pr) + f * (-1 + pr) * pr) * vth * (2 * c * f * k * M * pr * tauv - (k + f * pr) * vth))
-#     denominator = 2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log((c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
-# 
-#     result = numerator / denominator
-#     return result    
-# =============================================================================
-
-
-# =============================================================================
-# # original
-# def get_T_mean(k, f, pr, c, M, tauv, vth):
-#     b_mean = c * pr * k * M / (f * pr + k)
-#     return tauv * np.log(1 / (1 - vth / (f * tauv * b_mean)))
-# 
-# def get_CVT2(k, f, pr, c, M, tauv, vth):
-#     b_mean = c * pr * k * M / (f * pr + k)
-#     b_squared_mean = c**2 * (pr * (1 - pr) * k * M / (f * pr + k) + (pr * k * M / (f * pr + k)**2))
-# 
-#     numerator = -vth * (vth - 2 * f * tauv * b_mean) * b_squared_mean
-#     denominator = 2 * f * tauv * b_mean**2 * (vth - f * tauv * b_mean)**2 * np.log(1 + vth / (-vth + f * tauv * b_mean))**2
-# 
-#     return numerator / denominator   
-# =============================================================================
-
+        Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
+        CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
+    return Tmean, CVT2
 
 def get_T_mean(f, tauv, vth, c, pr, k, M):
     # General equation attempt with p and q
@@ -207,20 +91,9 @@ def get_CVT2(f, k, M, pr, tauv, vth, c):
     return result
 
 
-def get_equations(f, params):
-    
-    M = params['Mu']
-    pr = params['pu']
-    c = params['cu']
-    k = params['ku']
-    
-    tauv = params['tauv']
-    vth = params['vth']
-    
+def get_equations(f, c, pr, k, M, tauv, vth):    
     T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
     CVT2 = get_CVT2(f, k, M, pr, tauv, vth, c)
-    
-
     return T_mean, CVT2
 
 ###############################################################################
@@ -247,165 +120,38 @@ vth = 0.2
 delta_t = 0.01
 
 # Simulations
+mean_T_sim = []
+mean_T_eq = []
+CVT2_sim = []
+CVT2_eq = []
+pf_sim = []
+pf_eq = []
 
-mTs = []
-mTe = []
-cs = []
-ce = []
-pfs = []
-pfe = []
+for i, f_val in enumerate(f_val_list):
+    print(i/len(f_val_list))
+    Tmean, CVT2 = run_test(f_val, run_time, c, M, k, pr, tauv, vth, delta_t)
+    mean_T_sim.append(Tmean)
+    CVT2_sim.append(CVT2)
+    pf_sim.append(1/(f_val*Tmean))
 
-
-ntimes = 4 # 50 
-for ntime in range(ntimes):
-    print(ntime)
-    
-    mean_T_sim = []
-    mean_T_eq = []
-    CVT2_sim = []
-    CVT2_eq = []
-    pf_sim = []
-    pf_eq = []
-
-    for i, f_val in enumerate(f_val_list):
-        params = to_dict(run_time = run_time, f = f_val, Mu = M,
-                         pu = pr, cu = c, ku = k, 
-                         tauv = tauv, vth = vth, delta_t = delta_t)  
-# =============================================================================
-#         print(i/len(f_val_list))
-# =============================================================================
-    
-        result = run_test(params)
-        
-        mean_T_sim.append(result['mean_T'])
-        CVT2_sim.append(result['CVT2'])
-        pf_sim.append(1/(f_val*result['mean_T']))
-
-    for f_val in f_val_list:
-        T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, params)
-        mean_T_eq.append(T_mean_eq_val)
-        CVT2_eq.append(CVT2T_eq_val)
-        pf_eq.append(1/(f_val*T_mean_eq_val))
-        
-    mTs.append(mean_T_sim)
-    mTe.append(mean_T_eq)
-    cs.append(CVT2_sim)
-    ce.append(CVT2_eq)
-    pfs.append(pf_sim)
-    pfe.append(pf_eq)
-        
-mean_T_sim = np.array(mTs)
-CVT2_sim = np.array(cs)
-mean_T_eq = np.array(mTe)
-CVT2_eq = np.array(ce)
-pf_sim = np.array(pfs)
-pf_eq = np.array(pfe)
-
-mean_T_sim = np.array(mean_T_sim)
-mean_T_eq = np.array(mean_T_eq)
-CVT2_sim = np.array(CVT2_sim)
-CVT2_eq = np.array(CVT2_eq)
-
-deltp = []
-errdeltp = []
-
-deltT = []
-errdeltT = []
-
-deltC = []
-errdeltC = []
-
-CV2d = []
-errcv2d = []
-
-f_vec = []
-for i,x in enumerate(mean_T_sim.T):
-    mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
-    deltT.append(mean_cntr[0])
-    errdeltT.append(mean_cntr[1][1]-mean_cntr[0])
-    f_vec.append(f_val_list[i])
-
-for i,x in enumerate(CVT2_sim.T):
-# =============================================================================
-#     mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
-#     deltC.append(mean_cntr[0])
-#     errdeltC.append(mean_cntr[1][1]-mean_cntr[0])
-# =============================================================================
-    mean_cntr, var_cntr, std_cntr = bayesest(CVT2_sim.T,alpha=0.95)
-    deltC.append(var_cntr[0]/mean_cntr[0]**2)
-    errv=(var_cntr[1][1]-var_cntr[0])/mean_cntr[0]**2+2*(mean_cntr[1][1]-mean_cntr[0])*var_cntr[0]/mean_cntr[0]**3
-    errdeltC.append(errv)
-
-for i,x in enumerate(pf_sim.T):
-    mean_cntr, var_cntr, std_cntr = bayesest(x,alpha=0.95)
-    deltp.append(mean_cntr[0])
-    errdeltp.append(mean_cntr[1][1]-mean_cntr[0])
-
-mean_T_sim = np.mean(mean_T_sim, axis = 0)
-mean_T_eq = np.mean(mean_T_eq, axis = 0)
-CVT2_sim = np.mean(CVT2_sim, axis = 0)
-CVT2_eq = np.mean(CVT2_eq, axis = 0)
-pf_cv2 = np.var(pf_sim, axis = 0)/np.mean(pf_sim, axis = 0)
-pf_sim = np.mean(pf_sim, axis = 0)
-pf_eq = np.mean(pf_eq, axis = 0)
-
-
-        
+for f_val in f_val_list:
+    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, c, pr, k, M, tauv, vth)
+    mean_T_eq.append(T_mean_eq_val)
+    CVT2_eq.append(CVT2T_eq_val)
+    pf_eq.append(1/(f_val*T_mean_eq_val))
 
 #%%
-
-# =============================================================================
-# fig, ax = plt.subplots(1,3)
-# ax[0].plot(f_val_list, mean_T_sim, label = '<T> Simulations')
-# ax[0].plot(f_val_list, mean_T_eq, label = '<T> OL model')
-# ax[0].set_xlabel('Action potential frequency, (Hz)')
-# ax[0].set_ylabel('$\\langle T \\rangle$')
-# ax[1].plot(f_val_list, CVT2_sim, label = 'CVT2 Simulations')
-# ax[1].plot(f_val_list, CVT2_eq, label = 'CVT2 OL model')
-# ax[1].set_ylabel('$CV_{T}^2$')
-# ax[2].plot(f_val_list, pf_sim, label = 'p(f) simulations')
-# ax[2].plot(f_val_list, pf_eq, label = 'p(f) equation')
-# 
-# ax[0].legend()
-# ax[1].legend()
-# 
-# # =============================================================================
-# # plt.tight_layout()
-# # =============================================================================
-# plt.show()
-# =============================================================================
-
-# =============================================================================
-# fontsize = 15
-# plt.plot(f_val_list, pf_sim, label = 'p(f) simulations')
-# plt.plot(f_val_list, pf_eq, label = 'p(f) equation')
-# plt.xlabel('presynaptic neuron input frequency, f', fontsize = fontsize)
-# plt.ylabel('probability that the\n postsynaptic neuron fires, p(f)', fontsize = fontsize)
-# plt.tick_params(axis = 'both', labelsize = fontsize)
-# plt.legend(fontsize = fontsize)
-# plt.show()
-# =============================================================================
-
-
 # Set font size for better readability
 fontsize = 15
 
 # Plotting the data
-plt.subplot(1,2,1)
-plt.plot(f_val_list, pf_sim, label='simulated p(f)', linewidth=2, marker='-', markersize=8)
-plt.plot(f_val_list, pf_eq, label='theoretical p(f)', linestyle='.', linewidth=3)
+plt.plot(f_val_list, pf_sim, label='simulated p(f)', linewidth=2, markersize=8)
+plt.plot(f_val_list, pf_eq, label='theoretical p(f)', linewidth=3)
 
 # Adding labels and title
 plt.xlabel('presynaptic neuron input frequency, $f$ (Hz)', fontsize=fontsize)
 plt.ylabel('probability of postsynaptic\n neuron firing, $p(f)$', fontsize=fontsize)
 
-plt.errorbar(f_vec,deltp,yerr=errdeltp, fmt='o',mec='k',capsize=4,markersize='2',elinewidth=1,c='#0075BD', alpha = 0.5)
-
-
 plt.tick_params(axis='both', labelsize=fontsize)
 plt.legend(fontsize=fontsize)
 plt.grid(True, linestyle='--', alpha=0.7)
-
-plt.subplot(1,2,2)
-plt.plot(f_val_list, pf_cv2)
-plt.show()
