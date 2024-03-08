@@ -1,0 +1,63 @@
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
+from numpy.random import exponential, binomial
+import sys
+import cProfile
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+def get_F_mean(f, c, ci, k, ki, M, Mi, pr, pi, tauv, vth):
+    vat = c*f*pr*k*M/(k + f*pr) - ci*f*pi*ki*Mi/(ki + f*pi)
+    return 1/(tauv * log(1 / (1 - vth / (vat * tauv))))
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+# Test 1
+
+#######################
+
+
+pr = 0.2 # 0.1
+pi = 0.1 # 0.001
+M = 30 # 25
+Mi = 30 # 100
+c = 0.01 # 0.01
+ci = 0.0027 # 0.04
+tauv = 1 # 1
+vth = 0.2 # 0.2
+
+k = 10 # 10 <----------- FIXED
+ki = 50 # 100 
+delta_t = 0.01 # 0.01
+
+fmax=10000
+nsamples=1000
+flist = linspace(0,fmax,nsamples)
+fos=20
+cs=['blue', 'orange', 'green', 'red']
+def get_F_max(c, ci, pr, pi, k, ki, M, Mi, tauv, vth):
+    hmax = (k * ki * (np.sqrt(ci) * np.sqrt(Mi) * np.sqrt(pi) - np.sqrt(c) * np.sqrt(M) * np.sqrt(pr))**2) / (-k * pi + ki * pr)
+    return 1 / (tauv * np.log(1 / (1 - vth / (hmax * tauv))))
+
+vals=[2, 8, 14, 25]
+
+fs=[[get_F_mean(f, c, ci, k, val, M, Mi, pr, pi, tauv, vth) for f in flist] for val in vals]
+
+def get_F_lim(c, ci, k, ki, M, Mi, pr, pi, tauv, vth):  
+    return 1/(tauv*log(1/(1 - vth/((c *k* M - ci* ki* Mi ) *tauv))))
+
+for i,fp in enumerate(fs):
+    plt.plot(flist,fp, label='{},{}'.format(vals[i],vals[i]*pr - k*pi))
+    plt.axhline(y=get_F_lim(c, ci, k, vals[i], M, Mi, pr, pi, tauv, vth), 
+                color=cs[i], linestyle='--')
+    plt.axhline(y=get_F_max(c, ci, pr, pi, k, vals[i], M, Mi, tauv, vth), 
+                color=cs[i], linestyle=':', marker='o')   
+
+plt.ylabel('mean output frequency',fontsize=fos)
+plt.xlabel('input frequency',fontsize=fos)
+plt.legend(fontsize=fos)
+plt.tick_params(axis='both', labelsize=fos)
+plt.show()
