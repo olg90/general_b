@@ -10,29 +10,37 @@ def condition_2(c, M, pr, ci, Mi, pi, tauv, vth, k, ki):
 def condition_3(c, M, k, ci, Mi, ki):
     return ci*ki**2*Mi*pr<c*k**2*M*pi
 
+def condition_4(c, M, k, ci, Mi, ki, vth, tauv):
+    return ci*ki*Mi>c*k*M-vth/tauv
+
+# def condition_5(pr,pi,k,ki):
+#     return k* pi < ki* pr 
+
+
 def compute_plot_data(ce,ci,pr,pi,Me,Mi,tauv,vth):
     k_values, ki_values = np.meshgrid(np.linspace(0, 80, 1000), np.linspace(0, 100, 1000))
 
     plot_data_1 = condition_1(c, M, pr, ci, Mi, pi)
     plot_data_2 = condition_2(c, M, pr, ci, Mi, pi, tauv, vth, k_values, ki_values)
     plot_data_3 = condition_3(c, M, k_values, ci, Mi, ki_values)
+    # plot_data_4 = condition_4(c, M, k_values, ci, Mi, ki_values, vth, tauv)
+    # plot_data_5 = condition_5(pr, pi, k_values, ki_values)
 
     # Find the intersection of the three conditions
     intersection_data = plot_data_1 & plot_data_2 & plot_data_3
+    # intersection_data = plot_data_1 & plot_data_2 & plot_data_4
+    # intersection_data = plot_data_1 & plot_data_2 & plot_data_4 & plot_data_5
 
     return k_values, ki_values, intersection_data
 
-
-pr = 0.2 # 0.1
+pr = 0.1 # 0.1
 pi = 0.1 # 0.001
 M = 30 # 25
 Mi = 30 # 100
 c = 0.01 # 0.01
-ci = 0.0025 # 0.04
+ci = 0.0027 # 0.04
 tauv = 1 # 1
 vth = 0.2 # 0.2
-
-#
 
 # p1 = 0.1 # 0.1
 # p2 = 0.001 # 0.001
@@ -46,6 +54,7 @@ vth = 0.2 # 0.2
 # k1 = 10 # 10
 # k2 = 100 # 100
 
+
 #
 
 # Plot the contours of f(x, y) = c1 and g(x, y) = c2 on the same figure
@@ -58,13 +67,17 @@ lw=3
 plt.imshow(intersection_data.T, extent=[ki_values.min(), ki_values.max(), k_values.min(), k_values.max()],
            cmap='binary', origin='lower', alpha=1)
 
-upprr_limit_contour = plt.contour(ki_values, k_values, c*k_values**2*M*pi-ci*ki_values**2*Mi*pr, 
-                                  levels=[0], colors='blue', linewidths=lw)
-
-
-upprr_limit_contour = plt.contour(ki_values, k_values, k_values*ki_values*(
-    np.sqrt(ci*Mi*pi)+np.sqrt(c*M*pr))**2/(ki_values*pr-k_values*pi) > vth/tauv, 
+# plt.contour(ki_values, k_values, c*k_values**2*M*pi-ci*ki_values**2*Mi*pr, 
+#                                   levels=[0], colors='blue', linewidths=lw)
+plt.contour(ki_values, k_values, k_values*ki_values*(
+    np.sqrt(ci*Mi*pi)+np.sqrt(c*M*pr))**2/(ki_values*pr-k_values*pi) - vth/tauv, 
                                   levels=[0], colors='red', linewidths=lw)
+
+plt.contour(ki_values, k_values, ci*ki_values*Mi-c*k_values*M+vth/tauv, 
+                                  levels=[0], colors='green', linewidths=lw)
+
+# plt.contour(ki_values, k_values, ki_values*pr-k_values*pi, 
+#                                   levels=[0], colors='blue', linewidths=lw)
 
 fontsize = 20
 fn = 'Arial'
