@@ -22,8 +22,8 @@ def compute_plot_data(ce,ci,pr,pi,Me,Mi,tauv,vth):
 
     plot_data_1 = condition_1(c, M, pr, ci, Mi, pi)
     plot_data_2 = condition_2(c, M, pr, ci, Mi, pi, tauv, vth, k_values, ki_values)
-    plot_data_3 = condition_3(c, M, k_values, ci, Mi, ki_values)
-    # plot_data_4 = condition_4(c, M, k_values, ci, Mi, ki_values, vth, tauv)
+    plot_data_3 = condition_3(c, M, k_values, ci, Mi, ki_values) # derivitive < 0 for infinite case
+    plot_data_4 = condition_4(c, M, k_values, ci, Mi, ki_values, vth, tauv)
     # plot_data_5 = condition_5(pr, pi, k_values, ki_values)
 
     # Find the intersection of the three conditions
