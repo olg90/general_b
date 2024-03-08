@@ -32,11 +32,9 @@ def run_test(f, run_time, c, M, k, pr, tau3, vth3, delta_t):
             t_measure = delta_t
     if len(AP_times3) < 2:
         Tmean = nan
-        CVT2 = nan
     else:
         Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
-        CVT2 = var(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]) / (mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):]))**2
-    return Tmean, CVT2
+    return Tmean
 
 def get_T_mean(f, tauv, vth, c, pr, k, M):
     # General equation attempt with p and q
@@ -93,8 +91,7 @@ def get_CVT2(f, k, M, pr, tauv, vth, c):
 
 def get_equations(f, c, pr, k, M, tauv, vth):    
     T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
-    CVT2 = get_CVT2(f, k, M, pr, tauv, vth, c)
-    return T_mean, CVT2
+    return T_mean
 
 ###############################################################################
 #
@@ -119,34 +116,35 @@ vth = 0.2
 
 delta_t = 0.01
 
-# Simulations
-mean_T_sim = []
-mean_T_eq = []
-CVT2_sim = []
-CVT2_eq = []
-pf_sim = []
-pf_eq = []
 
-for i, f_val in enumerate(f_val_list):
-    print(i/len(f_val_list))
-    Tmean, CVT2 = run_test(f_val, run_time, c, M, k, pr, tauv, vth, delta_t)
-    mean_T_sim.append(Tmean)
-    CVT2_sim.append(CVT2)
-    pf_sim.append(1/(f_val*Tmean))
+psim=[]
+peq=[]
+vals=[40,60,100]
 
-for f_val in f_val_list:
-    T_mean_eq_val, CVT2T_eq_val = get_equations(f_val, c, pr, k, M, tauv, vth)
-    mean_T_eq.append(T_mean_eq_val)
-    CVT2_eq.append(CVT2T_eq_val)
-    pf_eq.append(1/(f_val*T_mean_eq_val))
+for i,val in enumerate(vals):
+    # Simulations
+    pf_sim = []
+    pf_eq = []
+    
+    for i, f_val in enumerate(f_val_list):
+        print(i/len(f_val_list))
+        Tmean = run_test(f_val, run_time, c, M, val, pr, tauv, vth, delta_t)
+        pf_sim.append(1/(f_val*Tmean))
+    
+    for f_val in f_val_list:
+        T_mean_eq_val = get_equations(f_val, c, pr, val, M, tauv, vth)
+        pf_eq.append(1/(f_val*T_mean_eq_val))
+        
+    psim.append(pf_sim)
+    peq.append(pf_eq)
 
-#%%
 # Set font size for better readability
 fontsize = 15
 
-# Plotting the data
-plt.plot(f_val_list, pf_sim, label='simulated p(f)', linewidth=2, markersize=8)
-plt.plot(f_val_list, pf_eq, label='theoretical p(f)', linewidth=3)
+for i in range(len(vals)):
+    # Plotting the data
+    plt.plot(f_val_list, psim[i], label='simulated p(f) val={}'.format(vals[i]), linewidth=2, markersize=8)
+    plt.plot(f_val_list, peq[i], label='theoretical p(f) val={}'.format(vals[i]), linewidth=3)
 
 # Adding labels and title
 plt.xlabel('presynaptic neuron input frequency, $f$ (Hz)', fontsize=fontsize)
