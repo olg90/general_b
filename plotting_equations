@@ -33,12 +33,12 @@ def compute_plot_data(ce,ci,pr,pi,Me,Mi,tauv,vth):
 
     return k_values, ki_values, intersection_data
 
-pr = 0.1 # 0.1
-pi = 0.1 # 0.001
-M = 30 # 25
+pr = 0.3 # 0.1
+pi = 0.2 # 0.001
+M = 40 # 25
 Mi = 30 # 100
 c = 0.01 # 0.01
-ci = 0.0027 # 0.04
+ci = 0.001 # 0.04
 tauv = 1 # 1
 vth = 0.2 # 0.2
 
@@ -54,11 +54,9 @@ vth = 0.2 # 0.2
 # k1 = 10 # 10
 # k2 = 100 # 100
 
-
 #
 
 # Plot the contours of f(x, y) = c1 and g(x, y) = c2 on the same figure
-
 
 k_values, ki_values, intersection_data = compute_plot_data(c, ci, pr, pi, M, Mi, tauv, vth)
 lw=3
@@ -67,14 +65,14 @@ lw=3
 plt.imshow(intersection_data.T, extent=[ki_values.min(), ki_values.max(), k_values.min(), k_values.max()],
            cmap='binary', origin='lower', alpha=1)
 
-# plt.contour(ki_values, k_values, c*k_values**2*M*pi-ci*ki_values**2*Mi*pr, 
-#                                   levels=[0], colors='blue', linewidths=lw)
+plt.contour(ki_values, k_values, c*k_values**2*M*pi-ci*ki_values**2*Mi*pr, 
+                                  levels=[0], colors='blue', linewidths=lw)
 plt.contour(ki_values, k_values, k_values*ki_values*(
     np.sqrt(ci*Mi*pi)+np.sqrt(c*M*pr))**2/(ki_values*pr-k_values*pi) - vth/tauv, 
                                   levels=[0], colors='red', linewidths=lw)
 
-plt.contour(ki_values, k_values, ci*ki_values*Mi-c*k_values*M+vth/tauv, 
-                                  levels=[0], colors='green', linewidths=lw)
+# plt.contour(ki_values, k_values, ci*ki_values*Mi-c*k_values*M+vth/tauv, 
+#                                   levels=[0], colors='green', linewidths=lw)
 
 # plt.contour(ki_values, k_values, ki_values*pr-k_values*pi, 
 #                                   levels=[0], colors='blue', linewidths=lw)
