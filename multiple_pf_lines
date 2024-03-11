@@ -1,0 +1,185 @@
+from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan
+from numpy.random import exponential, binomial
+import sys
+import cProfile
+
+import matplotlib.pyplot as plt
+
+def run_test(f, run_time, c, M, k, pr, tauv, vth, delta_t):
+    current_time = 0
+    v3 = 0
+    n1 = 0
+    AP_times3 = []
+    t_measure = delta_t
+    while current_time < run_time:
+        t0=exponential(1./f)
+        t1=exponential(1./(k*(M-n1)+1e-10))
+        if t0<t1:
+            t_min=t0
+            b1 = binomial(n1, pr) # Number released
+            n1-=b1
+            v3*=exp(-t_min/tauv)
+            v3+=c*b1
+            if v3>vth:
+                AP_times3.append(current_time)
+                v3 = 0
+        else:
+            t_min=t1
+            v3*=exp(-t_min/tauv)
+            if n1 < M:
+                n1+=1
+        current_time += t_min
+        t_measure -= t_min
+        if t_measure == 0:
+            t_measure = delta_t
+    if len(AP_times3) < 2:
+        Tmean = nan
+    else:
+        Tmean = mean(diff(AP_times3)[int(0.4*(len(AP_times3))-1):])
+    return Tmean
+
+# =============================================================================
+# def get_T_mean(k, f, pr, c, M, tauv, vth):
+#     return tauv * np.log(1 / (1 - ((k + f * pr) * vth) / (c * f * k * M * pr * tauv)))
+#
+# def get_CVT2(k, f, pr, c, M, tauv, vth):
+#     numerator = -((k + f * pr) * (-1 + k * (-1 + pr) + f * (-1 + pr) * pr) * vth * (2 * c * f * k * M * pr * tauv - (k + f * pr) * vth))
+#     denominator = 2 * f * k * M * pr * tauv * (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 * np.log((c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
+# 
+#     result = numerator / denominator
+#     return result    
+# =============================================================================
+
+
+# =============================================================================
+# # original
+# def get_T_mean(k, f, pr, c, M, tauv, vth):
+#     b_mean = c * pr * k * M / (f * pr + k)
+#     return tauv * np.log(1 / (1 - vth / (f * tauv * b_mean)))
+# 
+# def get_CVT2(k, f, pr, c, M, tauv, vth):
+#     b_mean = c * pr * k * M / (f * pr + k)
+#     b_squared_mean = c**2 * (pr * (1 - pr) * k * M / (f * pr + k) + (pr * k * M / (f * pr + k)**2))
+# 
+#     numerator = -vth * (vth - 2 * f * tauv * b_mean) * b_squared_mean
+#     denominator = 2 * f * tauv * b_mean**2 * (vth - f * tauv * b_mean)**2 * np.log(1 + vth / (-vth + f * tauv * b_mean))**2
+# 
+#     return numerator / denominator   
+# =============================================================================
+
+
+def get_T_mean(f, tauv, vth, c, pr, k, M):
+    # General equation attempt with p and q
+
+    nMeanSS = k * M / (f * pr + k)
+    bMeanSS = pr * nMeanSS
+    vatSS = c * bMeanSS
+            
+    return tauv * log(1 / (1 - vth / (f * tauv * vatSS)))
+
+def get_CVT2(f, k, M, pr, tauv, vth, c):
+    numerator = -((k + f * pr)**2 * (
+        (2 * f * k**2 * M**2 * pr**2 * tauv * vth**2) / 
+        (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
+        1 / (k + f * pr - (k + f * pr)**3 * tauv**2) * 
+        (1 / (2 * k - f * (-2 + pr) * pr) * k * M * pr * 
+         (-f * (-2 + pr) * pr + 2 * k * (1 + (-1 + M) * pr)) * 
+         ((1 - k * tauv + f * pr * tauv) * (1 + k * tauv + f * pr * tauv) - 
+          4 * f * pr * tauv * ((c * f * k * M * pr * tauv) / 
+                               (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+          (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
+           (1 + k * tauv - f * pr * tauv) * 
+           (-1 + k * tauv + f * pr * tauv)) / 
+          (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2) + 
+         2 * f * k * M * pr**2 * tauv * 
+         (((2 * k * M - f * (-2 + pr) * pr) * 
+           (-1 - (k + f * pr) * tauv + 
+            2 * ((c * f * k * M * pr * tauv) / 
+                 (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+            (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
+             (-1 + k * tauv + f * pr * tauv)) / 
+            (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2)) / 
+         (2 * k - f * (-2 + pr) * pr) + 
+         1 / (k + f * pr) * 
+         k * M * ((k + f * pr) * tauv * 
+                  (1 + k * tauv + f * pr * tauv) - 
+                  2 * ((c * f * k * M * pr * tauv) / 
+                       (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+                  (c**2 * f**2 * k**2 * M**2 * pr**2 * 
+                   (k + f * pr) * tauv**3 * 
+                   (-1 + k * tauv + f * pr * tauv)) / 
+                  (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
+                  (2 * c * f * k * M * pr * tauv * 
+                   (1 - (k + f * pr)**2 * tauv**2)) / 
+                  (c * f * k * M * pr * tauv - (k + f * pr) * vth))))))
+
+    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * np.log(
+        (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
+
+    result = numerator / denominator
+
+    return result
+
+
+def get_equations(f, params):
+    T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
+    return T_mean
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+# Test 1
+
+# Values of c to test
+f_max = 500
+n_samples = 100
+f_val_list = linspace(0,f_max, n_samples)
+
+run_time = 60*10
+
+c = 0.02 # 0.01
+pr = 0.1 # 0.1
+M = 30 # 30
+k = 10 # 10
+tauv = 1 # 1
+vth = 0.2 # 0.2
+
+delta_t = 0.01
+
+# Simulations
+
+
+pfs=[]
+pfe=[]
+
+cs=['red', 'green', 'blue']
+clist=[0.01,0.02,0.03]
+mks=['o', 'x', '^','v', '|']
+
+for j in range(len(clist)):
+    pf_sim = []
+    pf_eq = []
+    
+    for i, f_val in enumerate(f_val_list):
+    
+        print(i/len(f_val_list))
+        result = run_test(f_val, run_time, clist[j], M, k, pr, tauv, vth, delta_t)
+        pf_sim.append(1/(f_val*result))
+        T_mean_eq_val = get_T_mean(f_val, tauv, vth, clist[j], pr, k, M)
+        pf_eq.append(1/(f_val*T_mean_eq_val))
+    
+    pfs.append(pf_sim)
+    pfe.append(pf_eq)
+  
+#%%
+fs=20
+for i, cval in enumerate(clist):
+    plt.plot(f_val_list, pfe[i], color=cs[i], label='c={}'.format(clist[i]))
+    plt.plot(f_val_list, pfs[i], color=cs[i],
+             alpha=0.5, linestyle='--')
+plt.ylabel('postsynaptic firing probability', fontsize=fs)
+plt.xlabel(r'input frequency, $Hz$', fontsize=fs)
+plt.legend(loc='upper right', fontsize=fs)
+plt.tick_params(axis='both', labelsize=fs)
