@@ -1,0 +1,328 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+from numpy import exp, var, nan, mean, diff
+from numpy.random import exponential, binomial
+
+
+def get_hill(f, x0, x1, Hx, cx):
+    return (x1*(f/cx)**Hx+x0)/(1+(f/cx)**Hx)
+    
+
+def get_arg_type(i):
+    
+    if i == 0:
+        return 'f'
+    if i == 1:
+        return 'nu'
+    if i == 2:
+        return 'measure'
+
+def to_dict(**x):
+    return x
+
+def run_testk(f, run_time, c, M, k, pr, tau, vth, delta_t, Hx, cx, x0, x1, xname):
+    
+    if xname == 'k':
+        k = get_hill(f, x0, x1, Hx, cx)
+    if xname == 'pr':
+        pr = get_hill(f, x0, x1, Hx, cx)
+    if xname == 'M':
+        M = get_hill(f, x0, x1, Hx, cx)
+    if xname == 'c':
+        c = get_hill(f, x0, x1, Hx, cx)
+    
+    current_time = 0
+    v = 0
+    n = 0
+
+    AP_times = []
+    t_measure = delta_t
+    while current_time < run_time:
+        t0=exponential(1./f)
+        print(1./(k*(M-n)+1e-10))
+        t1=exponential(1./(k*(M-n)+1e-10))
+        if t0<t1:
+            t_min=t0
+            b = binomial(n, pr) # Number released
+            n-=b
+            v*=exp(-t_min/tau)
+            v+=c*b
+            if v>vth:
+                AP_times.append(current_time)
+                v = 0
+        elif t1<t0:
+            t_min=t1
+            v*=exp(-t_min/tau)
+            if n < M:
+                n+=1            
+        current_time += t_min
+        t_measure -= t_min   
+        if t_measure == 0:
+            t_measure = delta_t
+    if len(AP_times) < 2:
+        return nan, nan
+    else:
+        return mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]), \
+            var(diff(AP_times)[int(0.4*(len(AP_times))-1):]) / (mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]))**2
+
+def run_test(f, run_time, c, M, k, pr, tau, vth, delta_t):
+    
+    current_time = 0
+    v = 0
+    n = 0
+
+    AP_times = []
+    t_measure = delta_t
+    while current_time < run_time:
+        t0=exponential(1./f)
+        t1=exponential(1./(k*(M-n)+1e-10))
+        if t0<t1:
+            t_min=t0
+            b = binomial(n, pr) # Number released
+            n-=b
+            v*=exp(-t_min/tau)
+            v+=c*b
+            if v>vth:
+                AP_times.append(current_time)
+                v = 0
+        elif t1<t0:
+            t_min=t1
+            v*=exp(-t_min/tau)
+            if n < M:
+                n+=1            
+        current_time += t_min
+        t_measure -= t_min   
+        if t_measure == 0:
+            t_measure = delta_t
+    if len(AP_times) < 2:
+        return nan, nan
+    else:
+        return mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]), \
+            var(diff(AP_times)[int(0.4*(len(AP_times))-1):]) / (mean(diff(AP_times)[int(0.4*(len(AP_times))-1):]))**2
+
+
+
+
+def get_T_mean(f, tauv, vth, c, pr, k, M):
+    # General equation attempt with p and q
+
+    nMeanSS = k * M / (f * pr + k)
+    bMeanSS = pr * nMeanSS
+    vatSS = c * bMeanSS
+            
+    return tauv * np.log(1 / (1 - vth / (f * tauv * vatSS)))
+
+def get_CVT2(f, k, M, pr, tauv, vth, c):
+    numerator = -((k + f * pr)**2 * (
+        (2 * f * k**2 * M**2 * pr**2 * tauv * vth**2) / 
+        (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
+        1 / (k + f * pr - (k + f * pr)**3 * tauv**2) * 
+        (1 / (2 * k - f * (-2 + pr) * pr) * k * M * pr * 
+         (-f * (-2 + pr) * pr + 2 * k * (1 + (-1 + M) * pr)) * 
+         ((1 - k * tauv + f * pr * tauv) * (1 + k * tauv + f * pr * tauv) - 
+          4 * f * pr * tauv * ((c * f * k * M * pr * tauv) / 
+                               (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+          (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
+           (1 + k * tauv - f * pr * tauv) * 
+           (-1 + k * tauv + f * pr * tauv)) / 
+          (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2) + 
+         2 * f * k * M * pr**2 * tauv * 
+         (((2 * k * M - f * (-2 + pr) * pr) * 
+           (-1 - (k + f * pr) * tauv + 
+            2 * ((c * f * k * M * pr * tauv) / 
+                 (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+            (c**2 * f**2 * k**2 * M**2 * pr**2 * tauv**2 * 
+             (-1 + k * tauv + f * pr * tauv)) / 
+            (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2)) / 
+         (2 * k - f * (-2 + pr) * pr) + 
+         1 / (k + f * pr) * 
+         k * M * ((k + f * pr) * tauv * 
+                  (1 + k * tauv + f * pr * tauv) - 
+                  2 * ((c * f * k * M * pr * tauv) / 
+                       (c * f * k * M * pr * tauv - (k + f * pr) * vth))**(1 - (k + f * pr) * tauv) + 
+                  (c**2 * f**2 * k**2 * M**2 * pr**2 * 
+                   (k + f * pr) * tauv**3 * 
+                   (-1 + k * tauv + f * pr * tauv)) / 
+                  (c * f * k * M * pr * tauv - (k + f * pr) * vth)**2 + 
+                  (2 * c * f * k * M * pr * tauv * 
+                   (1 - (k + f * pr)**2 * tauv**2)) / 
+                  (c * f * k * M * pr * tauv - (k + f * pr) * vth))))))
+
+    denominator = 2 * f * k**2 * M**2 * pr**2 * tauv * np.log(
+        (c * f * k * M * pr * tauv) / (c * f * k * M * pr * tauv - (k + f * pr) * vth))**2
+
+    result = numerator / denominator
+
+    return result
+
+def get_equationsk(f, run_time, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname):
+    
+
+    if xname != 0:
+        if xname == 'k':
+            k = get_hill(f, x0, x1, Hx, cx)
+        if xname == 'pr':
+            pr = get_hill(f, x0, x1, Hx, cx)
+        if xname == 'M':
+            M = get_hill(f, x0, x1, Hx, cx)
+        if xname == 'c':
+            c = get_hill(f, x0, x1, Hx, cx)
+    
+    T_mean = get_T_mean(f, tauv, vth, c, pr, k, M)
+    CVT2 = get_CVT2(f, k, M, pr, tauv, vth, c)
+    
+
+    return T_mean, CVT2
+
+
+
+###############################################################################
+#
+#                               Main Code
+#
+###############################################################################
+# Test 1
+
+# Values of c to test
+fmin = 0
+fmax = 1000
+n_samples = 500
+f_val_list = np.linspace(fmin,fmax, n_samples)
+
+run_time = 1
+
+xname = 'k'
+M = 50
+pr = 0.1
+c = 0.003 # 0.003
+tauv = 1
+vth = 0.2
+k = 10
+
+x0=k
+x1=0
+Hx = 10 # 1.7
+cx = 300 # 8
+
+
+delta_t = 0.01
+
+# k as a function of f -------------------------------------------------------------------------
+# Simulations
+
+def function(f_val_list, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname):
+    
+    if xname=='k':
+        k=x0
+    if xname=='c':
+        c=x0
+    if xname=='M':
+        M=x0
+    
+
+    mean_T_sim = []
+    CVT2_sim = []
+    
+    for i, f_val in enumerate(f_val_list):
+        print(i/len(f_val_list))
+        result = run_testk(f_val, run_time, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname)
+        mean_T_sim.append(result[0])
+        CVT2_sim.append(result[1])
+        
+    # Equations
+    
+    mean_T_eq = []
+    CVT2_eq = []
+    
+    for i,f_val in enumerate(f_val_list):
+        T_mean_eq_val, CVT2T_eq_val = get_equationsk(f_val, run_time, c, M, k, pr, tauv, vth, delta_t, Hx, cx, x0, x1, xname)
+        mean_T_eq.append(T_mean_eq_val)
+        CVT2_eq.append(CVT2T_eq_val)
+        
+    mean_T_eq = np.array(mean_T_eq)
+    
+    mean_T_simk = np.array(mean_T_sim)
+    mean_T_eqk = np.array(mean_T_eq)
+    return mean_T_simk, mean_T_eqk
+
+mean_T_simk, mean_T_eqk = function(f_val_list, c, M, k, pr, tauv, vth, delta_t, 
+                                   Hx, cx, x0, x1, xname)
+mtsc, mtec=function(f_val_list, c, M, k, pr, tauv, vth, delta_t, Hx, 400, c, 0, 'c')
+mtsm, mtem=function(f_val_list, c, M, k, pr, tauv, vth, delta_t, Hx, 400, M, 10, 'M')
+# open loop ---------------------------------
+
+mean_T_sim = []
+CVT2_sim = []
+
+for i, f_val in enumerate(f_val_list):
+    print(i/len(f_val_list))
+    result = run_test(f_val, run_time, c, M, k, pr, tauv, vth, delta_t)
+    mean_T_sim.append(result[0])
+    CVT2_sim.append(result[1])
+    
+# Equations
+
+mean_T_eq = []
+CVT2_eq = []
+pf_eq = []
+
+for i,f_val in enumerate(f_val_list):
+    T_mean_eq_val, CVT2T_eq_val = get_equationsk(f_val, run_time, c, M, k, pr, tauv, vth, delta_t, 0, 0, 0, 0, 0)
+    mean_T_eq.append(T_mean_eq_val)
+    CVT2_eq.append(CVT2T_eq_val)
+    
+# mean_T_sim = np.array(mean_T_sim)
+mean_T_eq = np.array(mean_T_eq)
+# CVT2_sim = np.array(CVT2_sim)
+CVT2_eq = np.array(CVT2_eq)
+
+mean_T_sim = np.array(mean_T_sim)
+mean_T_eq = np.array(mean_T_eq)
+CVT2_sim = np.array(CVT2_sim)
+CVT2_eq = np.array(CVT2_eq)
+
+fontsize = 15
+lw = 2
+fn='Bookman old style'
+
+plt.plot(f_val_list, 1/mean_T_eq, label = r'$1/<T>$ theoretical', linestyle = '-', linewidth = lw, color='#1f77b4')
+plt.plot(f_val_list, 1/mean_T_sim, label = r'$1/<T>$ simulations', linewidth=lw, linestyle='--',
+           color='#1f77b4', alpha=0.3)
+
+
+plt.plot(f_val_list, 1/mean_T_eqk, label = r'$1/<T>$ theoreticalk', linestyle = '-', linewidth = lw, color='#ff7f0e')
+plt.plot(f_val_list, 1/mean_T_simk, label = r'$1/<T>$ simulationsk',  linestyle='--',
+           linewidth=lw, color='#ff7f0e', alpha=0.5)
+
+
+plt.plot(f_val_list, 1/mtec, label = r'$1/<T>$ theoreticalk', 
+         linestyle = '-', linewidth = lw, color='red')
+plt.plot(f_val_list, 1/mtsc, label = r'$1/<T>$ simulationsk',  linestyle='--',
+           linewidth=lw, color='red', alpha=0.5)
+
+plt.plot(f_val_list, 1/mtem, label = r'$1/<T>$ theoreticalk', 
+         linestyle = '-', linewidth = lw, color='green')
+plt.plot(f_val_list, 1/mtsm, label = r'$1/<T>$ simulationsk',  linestyle='--',
+           linewidth=lw, color='green', alpha=0.5)
+
+
+
+plt.xlabel('presynaptic input frequency, (Hz)',
+           fontname=fn, fontsize = fontsize)
+plt.ylabel('mean output frequency, (Hz)', fontsize = fontsize, fontname=fn)
+
+
+plt.tick_params(axis ='both', labelsize = fontsize)
+
+# =============================================================================
+# plt.xscale('log')
+# =============================================================================
+
+plt.xlim([1,fmax])
+
+aval = 0.2
+plt.grid(True, alpha = aval)
+
+plt.tight_layout()
+plt.show()
