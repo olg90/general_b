@@ -1,85 +1,85 @@
-import numpy as np
-import matplotlib.pyplot as plt
-
+from scipy.stats import bayes_mvs as bayesest
 from numpy import inf, argmin, array, exp, var, nan, mean, diff, log, linspace, isnan, zeros, arange
 from numpy.random import exponential, binomial
+import matplotlib.pyplot as plt
 
-def get_v(t, tauv, gammax, v0, kv, x0):
-    result = np.exp(-t/tauv)*((-1+gammax*tauv)*v0 - (-1+np.exp(t*(-gammax+1/tauv))*kv*tauv*x0))/(-1+gammax*tauv)
-    return result
+def getnextv(t,tauv,gammax,kv,z,v):
+    numerator=(exp(-t*(gammax+1/tauv))*(-exp(t/tauv)*kv*tauv*z+exp(gammax*t)*((-1+gammax*tauv)*v+kv*tauv*z)))
+    denominator=(-1+gammax*tauv)
+    return numerator/denominator
 
-def run_test(f, run_time, kv, cx, gammax, M, k, pr, tau, vth, delta_t):
+def getnextz(t,gammax,z):
+    return exp(-gammax*t)*z
 
+def run_test(f, run_time, M, k, pr, gammax, kv, cx, tau, vth, delta_t):
+    
+    vhist=[]
+    zhist=[]
+    thist=[]
+    nhist=[]
     current_time = 0
-
     v = 0
     n = 0
-    x = 0
-
-    vhist=[]
-    nhist=[]
-    xhist=[]
-    thist=[]
-
+    z = 0
     AP_times = []
-    fire_times=[]
-    
+    t_measure=delta_t
     while current_time < run_time:
         t0=exponential(1./f)
         t1=exponential(1./(k*(M-n)+1e-10))
-        if t0<t1:
-            fire_times.append(current_time)
+        if t0<t1 and t0<t_measure:
             t_min=t0
             b = binomial(n, pr) # Number released
             n-=b
-
-            x=x*exp(-gammax*t_min) # decay
-            x+=cx*b # Add new
-            
-            v=get_v(t_min, tauv, gammax, v, kv, x)
-            
-            vhist.append(v)
-            nhist.append(n)
-            xhist.append(x)
-            thist.append(current_time)
+            z+=cx*b
+            v = getnextv(t_min, tauv, gammax, kv, z, v)
+            z = getnextz(t_min, gammax, z)
 
             if v>vth:
+                AP_times.append(current_time)
+                v = 0
                 
-                AP_times.append(current_time)
-                v = 0
-                vhist.append(v)
-                nhist.append(n)
-                xhist.append(x*exp(-gammax*(1e-9)))
-                thist.append(current_time+1e-9)
-
-        else:
-            t_min=t1
-            x=x*exp(-gammax*t_min) # decay
-            v=get_v(t_min, tauv, gammax, v, kv, x)
-
-            if n < M:
-                n+=1 
-
             vhist.append(v)
-            nhist.append(n)
-            xhist.append(x)
+            zhist.append(z)
             thist.append(current_time)
-            
+            nhist.append(n)
+                
+            t_measure-=t_min
+        elif t1 < t0 and t1 < t_measure:
+            t_min=t1
+            if n < M:
+                n+=1
+            v = getnextv(t_min, tauv, gammax, kv, z, v)
+            z = getnextz(t_min, gammax, z)
+
             if v>vth:
                 AP_times.append(current_time)
                 v = 0
-                vhist.append(v)
-                thist.append(current_time+1e-9)
-                nhist.append(n)
-                xhist.append(x*exp(-gammax*(1e-9)))
-
-
+                
+            vhist.append(v)
+            zhist.append(z)
+            thist.append(current_time)
+            nhist.append(n)
             
+            t_measure -= t_min
+        else:
+            v = getnextv(t_measure, tauv, gammax, kv, z, v)
+            z = getnextz(t_measure, gammax, z)
+
+            if v>vth:
+                AP_times.append(current_time)
+                v = 0
+
+            t_measure=delta_t
+            
+            vhist.append(v)
+            zhist.append(z)
+            thist.append(current_time)
+            nhist.append(n)
+    
         current_time += t_min
-            
-        
-    return fire_times, AP_times, thist, vhist, nhist, xhist
 
+    return vhist, zhist, thist, nhist
+            
 ###############################################################################
 #
 #                               Main Code
@@ -89,35 +89,30 @@ def run_test(f, run_time, kv, cx, gammax, M, k, pr, tau, vth, delta_t):
 
 # Values of c to test
 fmin = 1
-fmax = 500
-n_samples = 500
-f_val_list = np.linspace(fmin,fmax, n_samples)
+fmax = 100
+n_samples = 100
+f_val_list = linspace(fmin, fmax, n_samples)
 
-run_time = 5
+run_time = 1
 
-xname = 'k'
-M = 50
-pr = 0.2
+M = 100
+k = 10
+pr = 0.1
+gammax = 2
+kv = 0.01
+cx = 10
 tauv = 1
 vth = 0.2
-k=10
-
-
-gammax=1000 # Decay rate
-kv=0.001 # Voltage introduction rate
-cx=10 # Number of neurotransmitters per vesicle
-
-f=2
+f=10
 
 delta_t = 0.01
 
-
-ft, apt, th, vh, nh, xh = run_test(f, run_time, kv, cx, gammax, M, k, pr, tauv, vth, delta_t)
-fig, ax = plt.subplots(4,1)
-ax[0].plot(th, vh)
-ax[1].plot(th, nh)
-ax[2].plot(th, xh)
-ax[0].set_ylabel('v')
-ax[1].set_ylabel('n')
-ax[2].set_ylabel('x')
-ax[3].vlines(ft, ymin=0,ymax=0.2, linewidth=1)
+vh,zh,th,nh =run_test(f, run_time, M, k, pr, gammax, kv, cx, tauv, vth, delta_t)
+fig, ax = plt.subplots(1,3, figsize=(10,3))
+ax[0].plot(th,vh, label='v')
+ax[0].legend()
+ax[1].plot(th,zh, label='z')
+ax[1].legend()
+ax[2].plot(th,nh, label='n')
+ax[2].legend()
+plt.show()
